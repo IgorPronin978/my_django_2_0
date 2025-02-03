@@ -187,8 +187,17 @@ def get_all_news(request):
     return render(request, "news/catalog.html", context=info)
 
 
-def get_detail_news_by_id(request, news_id):
+def get_detail_article_by_id(request, article_id):
     """
 Возвращает детальную информацию по новости для представления
     """
-    return HttpResponse(f'Detail news by id {news_id}')
+    article = None
+    for a in news_dataset:
+        if a['id_article'] == int(article_id):
+            article = a
+            break
+    info['article'] = article
+
+    if article:
+        return render(request, 'news/article_detail.html', context=info)
+    return HttpResponse('Статья не найдена', status=404)
