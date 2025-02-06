@@ -71,7 +71,7 @@ def category_by_name(request, slug):
 
 def get_all_news(request):
 
-    articles = Article.objects.all()
+    articles = Article.objects.select_related('category').related('tags')
 
     info = {
         'news': articles,
