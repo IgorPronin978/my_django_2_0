@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 
+app_name = 'news'
 # будет иметь префикс в urlах /news/
 urlpatterns = [
     path('catalog/', views.get_all_news, name='catalog'),

@@ -11,7 +11,6 @@ from .models import Article
 контекст шаблона
 """
 # Пример данных для новостей
-
 info = {
     "users_count": 5,
     "news_count": 10,
@@ -24,7 +23,7 @@ info = {
          "url_name": "about"},
         {"title": "Каталог",
          "url": "/news/catalog/",
-         "url_name": "catalog"},
+         "url_name": "news:catalog"},
     ],
 }
 
@@ -98,18 +97,9 @@ def get_all_news(request):
 
     articles = Article.objects.select_related('category').prefetch_related('tags').order_by(order_by)
 
-    info = {
-        'news': articles,
-        "users_count": 5,
-        "news_count": 10,
-        "menu": [
-            {"title": "Главная", "url": "/", "url_name": "index"},
-            {"title": "О проекте", "url": "/about/", "url_name": "about"},
-            {"title": "Каталог", "url": "/news/catalog/", "url_name": "catalog"},
-        ],
-    }
+    context = {**info, 'news': articles, 'news_count': len(articles), }
 
-    return render(request, 'news/catalog.html', context=info)
+    return render(request, 'news/catalog.html', context=context)
 
 
 def get_detail_article_by_id(request, article_id):
@@ -117,17 +107,10 @@ def get_detail_article_by_id(request, article_id):
     Возвращает детальную информацию по новости для представления
     """
     article = get_object_or_404(Article, id=article_id)
-    info = {
-        'article': article,
-        "users_count": 5,
-        "news_count": 10,
-        "menu": [
-            {"title": "Главная", "url": "/", "url_name": "index"},
-            {"title": "О проекте", "url": "/about/", "url_name": "about"},
-            {"title": "Каталог", "url": "/news/catalog/", "url_name": "catalog"},
-        ],
-    }
-    return render(request, 'news/article_detail.html', context=info)
+
+    context = {**info, 'article': article}
+
+    return render(request, 'news/article_detail.html', context=context)
 
 
 def get_detail_article_by_title(request, title):
@@ -135,14 +118,7 @@ def get_detail_article_by_title(request, title):
     Возвращает детальную информацию по новости для представления
     """
     article = get_object_or_404(Article, slug=title)
-    info = {
-        'article': article,
-        "users_count": 5,
-        "news_count": 10,
-        "menu": [
-            {"title": "Главная", "url": "/", "url_name": "index"},
-            {"title": "О проекте", "url": "/about/", "url_name": "about"},
-            {"title": "Каталог", "url": "/news/catalog/", "url_name": "catalog"},
-        ],
-    }
+
+    context = {**info, 'article': article}
+
     return render(request, 'news/article_detail.html', context=info)
