@@ -2,8 +2,7 @@
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 
-from .models import Article
-
+from .models import Article, Tag
 
 """
 Информация в шаблоны будет браться из базы данных
@@ -58,11 +57,21 @@ def get_news_by_category(request, slug):
     return HttpResponse(f'News by category {slug}')
 
 
-def get_news_by_tag(request, slug):
+def get_news_by_tag(request, tag_id):
     """
     Возвращает новости по тегу для представления в каталоге
     """
-    return HttpResponse(f'News by tag {slug}')
+    tag = get_object_or_404(Tag, id=tag_id)  # Используем id для поиска тега
+    articles = Article.objects.filter(tags=tag).order_by('-publication_date')
+
+    context = {
+        **info,
+        'news': articles,
+        'news_count': len(articles),
+        'tag': tag,
+    }
+
+    return render(request, 'news/catalog.html', context=context)
 
 
 def get_category_by_name(request, slug):
