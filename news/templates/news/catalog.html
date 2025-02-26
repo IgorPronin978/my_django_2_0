@@ -1,15 +1,28 @@
-
 {% extends 'base.html' %}
 
 {% comment %} Этот шаблон расширяет базовый шаблон base.html {% endcomment %}
 {% comment %} news/templates/news/catalog.html {% endcomment %}
 
-{% block title %}Каталог новостей Info to Go{% endblock %}
+{% block title %}
+    {% if category %}
+        Новости в категории: {{ category.name }} | Info to Go
+    {% else %}
+        Каталог новостей Info to Go
+    {% endif %}
+{% endblock %}
 
 {% block content %}
-    <h1 class="text-center mb-4">Каталог новостей Info to Go</h1>
+    <h1 class="text-center mb-4">
+        {% if category %}
+            Новости в категории: {{ category.name }}
+        {% else %}
+            Каталог новостей Info to Go
+        {% endif %}
+    </h1>
+
     <p class="text-center">Всего новостей: {{ news_count }}</p>
     <p class="text-center">Всего пользователей: {{ users_count }}</p>
+
     <div class="row">
         {% for article in news %}
             <div class="col-md-4">
