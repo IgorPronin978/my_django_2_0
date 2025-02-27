@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 
@@ -120,12 +121,22 @@ def get_all_news(request):
     else:
         articles = Article.objects.select_related('category').prefetch_related('tags').order_by(order_by)
 
+    # Пагинация
+    paginator = Paginator(articles, 9)  # 9 новостей на страницу
+    page_number = request.GET.get('page')  # получаем номер страницы из GET-запроса
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)  # если page_number не число, показываем первую страницу
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)  # если страница пуста, показываем последнюю
+
     categories_with_count = get_categories_with_news_count()
 
     context = {
         **info,
-        'news': articles,
-        'news_count': len(articles),
+        'news': page_obj,  # передаем объект страницы
+        'news_count': len(articles),  # общее количество новостей
         'categories_with_count': categories_with_count,
     }
 
