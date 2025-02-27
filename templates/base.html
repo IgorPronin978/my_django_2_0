@@ -58,25 +58,45 @@
         </nav>
     </header>
     <main class="container mt-5">
-        <div class="row">
-            <div class="col-md-2 sidebar">
-                <h4>Категории</h4>
-                <ul class="list-unstyled">
-                    {% for category in categories_with_count %}
-                        <li>
-                            <a href="{% url 'news:catalog' %}?category={{ category.category.id }}">
-                                {{ category.category.name }} ({{ category.news_count }})
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            <div class="col-md-10">
-                {% block content %}
-                {% endblock %}
-            </div>
+    <div class="row">
+        <div class="col-md-2 sidebar" style="margin-left: -30px;">
+            <h4>Категории</h4>
+            <ul class="list-unstyled">
+                {% for category in categories_with_count %}
+                    <li>
+                        <a href="{% url 'news:catalog' %}?category={{ category.category.id }}">
+                            {{ category.category.name }} ({{ category.news_count }})
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
         </div>
-    </main>
+        <div class="col-md-10">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+</main>
+
+<style>
+    .sidebar {
+        background-color: #343a40; /* Темный цвет фона */
+        padding: 20px;
+        border-right: 1px solid #454d55; /* Темная граница */
+        color: #ffffff; /* Белый цвет текста */
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Тень */
+        border-radius: 8px; /* Закругленные углы */
+    }
+
+    .sidebar a {
+        color: #ffc107; /* Желтый цвет ссылок */
+    }
+
+    .sidebar a:hover {
+        color: #e0a800; /* Темно-желтый цвет ссылок при наведении */
+    }
+</style>
+
     <footer class="footer mt-5">
         {% block footer %}
             <p>Этот текст будет выведен, если в наследуемом шаблоне нет подстановки</p>

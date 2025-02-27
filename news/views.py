@@ -5,8 +5,8 @@ from .models import Article, Tag, Category
 
 # Пример данных для новостей
 info = {
-    "users_count": 5,
-    "news_count": 10,
+    "users_count": 'нету',
+    "news_count": 'много',
     "menu": [
         {"title": "Главная",
          "url": "/",
