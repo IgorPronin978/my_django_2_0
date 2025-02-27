@@ -60,23 +60,36 @@ def get_categories(request):
     """
     return HttpResponse('All categories')
 
+
 def get_news_by_category(request, category_id):
     """
     Возвращает новости по категории для представления в каталоге
     """
     category = get_object_or_404(Category, id=category_id)
     articles = Article.objects.filter(category=category).order_by('-publication_date')
+
+    # Пагинация
+    paginator = Paginator(articles, 9)  # 9 новостей на страницу
+    page_number = request.GET.get('page')  # получаем номер страницы из GET-запроса
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)  # если page_number не число, показываем первую страницу
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)  # если страница пуста, показываем последнюю
+
     categories_with_count = get_categories_with_news_count()
 
     context = {
         **info,
-        'news': articles,
-        'news_count': len(articles),
+        'news': page_obj,  # передаем объект страницы
+        'news_count': len(articles),  # общее количество новостей
         'category': category,
         'categories_with_count': categories_with_count,
     }
 
     return render(request, 'news/catalog.html', context=context)
+
 
 def get_news_by_tag(request, tag_id):
     """
@@ -84,12 +97,23 @@ def get_news_by_tag(request, tag_id):
     """
     tag = get_object_or_404(Tag, id=tag_id)  # Используем id для поиска тега
     articles = Article.objects.filter(tags=tag).order_by('-publication_date')
+
+    # Пагинация
+    paginator = Paginator(articles, 9)  # 9 новостей на страницу
+    page_number = request.GET.get('page')  # получаем номер страницы из GET-запроса
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)  # если page_number не число, показываем первую страницу
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)  # если страница пуста, показываем последнюю
+
     categories_with_count = get_categories_with_news_count()
 
     context = {
         **info,
-        'news': articles,
-        'news_count': len(articles),
+        'news': page_obj,  # передаем объект страницы
+        'news_count': len(articles),  # общее количество новостей
         'tag': tag,
         'categories_with_count': categories_with_count,
     }

@@ -6,6 +6,8 @@
 {% block title %}
     {% if category %}
         Новости в категории: {{ category.name }} | Info to Go
+    {% elif tag %}
+        Новости по тегу: {{ tag.name }} | Info to Go
     {% else %}
         Каталог новостей Info to Go
     {% endif %}
@@ -15,6 +17,8 @@
     <h1 class="text-center mb-4">
         {% if category %}
             Новости в категории: {{ category.name }}
+        {% elif tag %}
+            Новости по тегу: {{ tag.name }}
         {% else %}
             Каталог новостей Info to Go
         {% endif %}
@@ -36,7 +40,7 @@
         <ul class="pagination justify-content-center">
             {% if news.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?{% if category %}category={{ category.id }}&{% endif %}page={{ news.previous_page_number }}" aria-label="Previous">
+                    <a class="page-link" href="?{% if category %}category={{ category.id }}&{% elif tag %}tag={{ tag.id }}&{% endif %}page={{ news.previous_page_number }}" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
@@ -53,14 +57,14 @@
                     </li>
                 {% else %}
                     <li class="page-item">
-                        <a class="page-link" href="?{% if category %}category={{ category.id }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        <a class="page-link" href="?{% if category %}category={{ category.id }}&{% elif tag %}tag={{ tag.id }}&{% endif %}page={{ num }}">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
 
             {% if news.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?{% if category %}category={{ category.id }}&{% endif %}page={{ news.next_page_number }}" aria-label="Next">
+                    <a class="page-link" href="?{% if category %}category={{ category.id }}&{% elif tag %}tag={{ tag.id }}&{% endif %}page={{ news.next_page_number }}" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
