@@ -34,6 +34,11 @@
             text-align: center;
             padding: 10px 0;
         }
+        .sidebar {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-right: 1px solid #dee2e6;
+        }
     </style>
   </head>
   <body>
@@ -53,8 +58,24 @@
         </nav>
     </header>
     <main class="container mt-5">
-        {% block content %}
-        {% endblock %}
+        <div class="row">
+            <div class="col-md-2 sidebar">
+                <h4>Категории</h4>
+                <ul class="list-unstyled">
+                    {% for category in categories_with_count %}
+                        <li>
+                            <a href="{% url 'news:catalog' %}?category={{ category.category.id }}">
+                                {{ category.category.name }} ({{ category.news_count }})
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-10">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
     </main>
     <footer class="footer mt-5">
         {% block footer %}

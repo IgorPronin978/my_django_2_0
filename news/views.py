@@ -1,14 +1,8 @@
-
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 
 from .models import Article, Tag, Category
 
-"""
-Информация в шаблоны будет браться из базы данных
-Но пока, мы сделаем переменные, куда будем записывать информацию, которая пойдет в 
-контекст шаблона
-"""
 # Пример данных для новостей
 info = {
     "users_count": 5,
@@ -26,22 +20,38 @@ info = {
     ],
 }
 
+def get_categories_with_news_count():
+    """
+    Возвращает список категорий с количеством новостей в каждой категории.
+    """
+    categories = Category.objects.all()
+    categories_with_count = []
+    for category in categories:
+        news_count = Article.objects.filter(category=category).count()
+        categories_with_count.append({
+            'category': category,
+            'news_count': news_count,
+        })
+    return categories_with_count
 
 def main(request):
     """
     Представление рендерит шаблон main.html
     """
-    return render(request, 'main.html', context=info)
-
+    categories_with_count = get_categories_with_news_count()
+    context = {**info, 'categories_with_count': categories_with_count}
+    return render(request, 'main.html', context=context)
 
 def about(request):
     """Представление рендерит шаблон about.html"""
-    return render(request, 'about.html', context=info)
-
+    categories_with_count = get_categories_with_news_count()
+    context = {**info, 'categories_with_count': categories_with_count}
+    return render(request, 'about.html', context=context)
 
 def catalog(request):
+    categories_with_count = get_categories_with_news_count()
+    context = {**info, 'categories_with_count': categories_with_count}
     return HttpResponse('Каталог новостей')
-
 
 def get_categories(request):
     """
@@ -49,23 +59,23 @@ def get_categories(request):
     """
     return HttpResponse('All categories')
 
-
 def get_news_by_category(request, category_id):
     """
     Возвращает новости по категории для представления в каталоге
     """
     category = get_object_or_404(Category, id=category_id)
     articles = Article.objects.filter(category=category).order_by('-publication_date')
+    categories_with_count = get_categories_with_news_count()
 
     context = {
         **info,
         'news': articles,
         'news_count': len(articles),
         'category': category,
+        'categories_with_count': categories_with_count,
     }
 
     return render(request, 'news/catalog.html', context=context)
-
 
 def get_news_by_tag(request, tag_id):
     """
@@ -73,71 +83,72 @@ def get_news_by_tag(request, tag_id):
     """
     tag = get_object_or_404(Tag, id=tag_id)  # Используем id для поиска тега
     articles = Article.objects.filter(tags=tag).order_by('-publication_date')
+    categories_with_count = get_categories_with_news_count()
 
     context = {
         **info,
         'news': articles,
         'news_count': len(articles),
         'tag': tag,
+        'categories_with_count': categories_with_count,
     }
 
     return render(request, 'news/catalog.html', context=context)
 
-
 def get_category_by_name(request, slug):
     return HttpResponse(f"Категория {slug}")
 
-
 def get_all_news(request):
-    """Функция для отображения страницы "Каталог"
-    будет возвращать рендер шаблона /templates/news/catalog.html
-    - **`sort`** - ключ для указания типа сортировки с возможными значениями: `publication_date`, `views`.
-    - **`order`** - опциональный ключ для указания направления сортировки с возможными значениями: `asc`, `desc`. По умолчанию `desc`.
-    1. Сортировка по дате добавления в убывающем порядке (по умолчанию): `/news/catalog/`
-    2. Сортировка по количеству просмотров в убывающем порядке: `/news/catalog/?sort=views`
-    3. Сортировка по количеству просмотров в возрастающем порядке: `/news/catalog/?sort=views&order=asc`
-    4. Сортировка по дате добавления в возрастающем порядке: `/news/catalog/?sort=publication_date&order=asc`
-    """
+    sort = request.GET.get('sort', 'publication_date')  # сортировка по умолчанию
+    order = request.GET.get('order', 'desc')  # направление сортировки по умолчанию
+    category_id = request.GET.get('category')  # получаем ID категории
 
-    # считаем параметры из GET-запроса
-    sort = request.GET.get('sort', 'publication_date')  # по умолчанию сортируем по дате загрузки
-    order = request.GET.get('order', 'desc')  # по умолчанию сортируем по убыванию
-
-    # Проверяем дали ли мы разрешение на сортировку по этому полю
+    # Проверяем, что сортировка допустима
     valid_sort_fields = {'publication_date', 'views'}
     if sort not in valid_sort_fields:
         sort = 'publication_date'
 
-    # Обрабатываем направление сортировки
+    # Определяем направление сортировки
     if order == 'asc':
         order_by = sort
     else:
         order_by = f'-{sort}'
 
-    articles = Article.objects.select_related('category').prefetch_related('tags').order_by(order_by)
+    # Фильтруем новости по категории, если передан category_id
+    if category_id:
+        articles = Article.objects.filter(category_id=category_id).order_by(order_by)
+    else:
+        articles = Article.objects.select_related('category').prefetch_related('tags').order_by(order_by)
 
-    context = {**info, 'news': articles, 'news_count': len(articles), }
+    categories_with_count = get_categories_with_news_count()
+
+    context = {
+        **info,
+        'news': articles,
+        'news_count': len(articles),
+        'categories_with_count': categories_with_count,
+    }
 
     return render(request, 'news/catalog.html', context=context)
-
 
 def get_detail_article_by_id(request, article_id):
     """
     Возвращает детальную информацию по новости для представления
     """
     article = get_object_or_404(Article, id=article_id)
+    categories_with_count = get_categories_with_news_count()
 
-    context = {**info, 'article': article}
+    context = {**info, 'article': article, 'categories_with_count': categories_with_count}
 
     return render(request, 'news/article_detail.html', context=context)
-
 
 def get_detail_article_by_title(request, title):
     """
     Возвращает детальную информацию по новости для представления
     """
     article = get_object_or_404(Article, slug=title)
+    categories_with_count = get_categories_with_news_count()
 
-    context = {**info, 'article': article}
+    context = {**info, 'article': article, 'categories_with_count': categories_with_count}
 
-    return render(request, 'news/article_detail.html', context=info)
+    return render(request, 'news/article_detail.html', context=context)
