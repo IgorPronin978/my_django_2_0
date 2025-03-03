@@ -1,33 +1,21 @@
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.http import HttpResponse
+from django.views import View
 from django.shortcuts import render, get_object_or_404
-
-from .models import Article, Tag, Category
-
 from django.db.models import Q
-
+from .models import Article, Tag, Category
 
 # Пример данных для новостей
 info = {
     "users_count": 'нету',
     "news_count": 'много',
     "menu": [
-        {"title": "Главная",
-         "url": "/",
-         "url_name": "index"},
-        {"title": "О проекте",
-         "url": "/about/",
-         "url_name": "about"},
-        {"title": "Каталог",
-         "url": "/news/catalog/",
-         "url_name": "news:catalog"},
+        {"title": "Главная", "url": "/", "url_name": "index"},
+        {"title": "О проекте", "url": "/about/", "url_name": "about"},
+        {"title": "Каталог", "url": "/news/catalog/", "url_name": "news:catalog"},
     ],
 }
 
 def get_categories_with_news_count():
-    """
-    Возвращает список категорий с количеством новостей в каждой категории.
-    """
     categories = Category.objects.all()
     categories_with_count = []
     for category in categories:
@@ -38,187 +26,115 @@ def get_categories_with_news_count():
         })
     return categories_with_count
 
+# Функция для главной страницы
 def main(request):
     """
-    Представление рендерит шаблон main.html
+    Представление для главной страницы.
     """
     categories_with_count = get_categories_with_news_count()
     context = {**info, 'categories_with_count': categories_with_count}
-    return render(request, 'main.html', context=context)
+    return render(request, 'main.html', context)
 
+# Функция для страницы "О проекте"
 def about(request):
-    """Представление рендерит шаблон about.html"""
+    """
+    Представление для страницы "О проекте".
+    """
     categories_with_count = get_categories_with_news_count()
     context = {**info, 'categories_with_count': categories_with_count}
-    return render(request, 'about.html', context=context)
+    return render(request, 'about.html', context)
 
-def catalog(request):
-    categories_with_count = get_categories_with_news_count()
-    context = {**info, 'categories_with_count': categories_with_count}
-    return HttpResponse('Каталог новостей')
+class PaginatedView:
+    paginate_by = 9
 
-def get_categories(request):
-    """
-    Возвращает все категории для представления в каталоге
-    """
-    return HttpResponse('All categories')
+    def paginate_queryset(self, queryset, request):
+        paginator = Paginator(queryset, self.paginate_by)
+        page_number = request.GET.get('page')
+        try:
+            page_obj = paginator.page(page_number)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+        return page_obj
 
+class BaseNewsView(View, PaginatedView):  # Наследуемся от View
+    template_name = 'news/catalog.html'
 
-def get_news_by_category(request, category_id):
-    """
-    Возвращает новости по категории для представления в каталоге
-    """
-    category = get_object_or_404(Category, id=category_id)
-    articles = Article.objects.filter(category=category).order_by('-publication_date')
+    def get_context_data(self, **kwargs):
+        context = {
+            **info,
+            'categories_with_count': get_categories_with_news_count(),
+            'news_count': kwargs.get('news_count', 0),
+            'news': kwargs.get('page_obj'),
+        }
+        return context
 
-    # Пагинация
-    paginator = Paginator(articles, 9)  # 9 новостей на страницу
-    page_number = request.GET.get('page')  # получаем номер страницы из GET-запроса
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)  # если page_number не число, показываем первую страницу
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)  # если страница пуста, показываем последнюю
+    def render(self, request, queryset, extra_context=None):
+        page_obj = self.paginate_queryset(queryset, request)
+        context = self.get_context_data(page_obj=page_obj, news_count=len(queryset))
+        if extra_context:
+            context.update(extra_context)
+        return render(request, self.template_name, context)
 
-    categories_with_count = get_categories_with_news_count()
+class AllNewsView(BaseNewsView):  # Наследуемся от BaseNewsView
+    def get(self, request):
+        sort = request.GET.get('sort', 'publication_date')
+        order = request.GET.get('order', 'desc')
+        category_id = request.GET.get('category')
 
-    context = {
-        **info,
-        'news': page_obj,  # передаем объект страницы
-        'news_count': len(articles),  # общее количество новостей
-        'category': category,
-        'categories_with_count': categories_with_count,
-    }
+        valid_sort_fields = {'publication_date', 'views'}
+        if sort not in valid_sort_fields:
+            sort = 'publication_date'
 
-    return render(request, 'news/catalog.html', context=context)
+        order_by = sort if order == 'asc' else f'-{sort}'
 
+        if category_id:
+            articles = Article.objects.filter(category_id=category_id).order_by(order_by)
+        else:
+            articles = Article.objects.select_related('category').prefetch_related('tags').order_by(order_by)
 
-def get_news_by_tag(request, tag_id):
-    """
-    Возвращает новости по тегу для представления в каталоге
-    """
-    tag = get_object_or_404(Tag, id=tag_id)  # Используем id для поиска тега
-    articles = Article.objects.filter(tags=tag).order_by('-publication_date')
+        return self.render(request, articles)
 
-    # Пагинация
-    paginator = Paginator(articles, 9)  # 9 новостей на страницу
-    page_number = request.GET.get('page')  # получаем номер страницы из GET-запроса
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)  # если page_number не число, показываем первую страницу
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)  # если страница пуста, показываем последнюю
+class NewsByCategoryView(BaseNewsView):  # Наследуемся от BaseNewsView
+    def get(self, request, category_id):
+        category = get_object_or_404(Category, id=category_id)
+        articles = Article.objects.filter(category=category).order_by('-publication_date')
+        extra_context = {'category': category}
+        return self.render(request, articles, extra_context)
 
-    categories_with_count = get_categories_with_news_count()
+class NewsByTagView(BaseNewsView):  # Наследуемся от BaseNewsView
+    def get(self, request, tag_id):
+        tag = get_object_or_404(Tag, id=tag_id)
+        articles = Article.objects.filter(tags=tag).order_by('-publication_date')
+        extra_context = {'tag': tag}
+        return self.render(request, articles, extra_context)
 
-    context = {
-        **info,
-        'news': page_obj,  # передаем объект страницы
-        'news_count': len(articles),  # общее количество новостей
-        'tag': tag,
-        'categories_with_count': categories_with_count,
-    }
+class SearchNewsView(BaseNewsView):  # Наследуемся от BaseNewsView
+    paginate_by = 10
 
-    return render(request, 'news/catalog.html', context=context)
+    def get(self, request):
+        query = request.GET.get('q')
+        if query:
+            articles = Article.objects.filter(
+                Q(title__icontains=query) | Q(content__icontains=query)
+            ).order_by('-publication_date')
+        else:
+            articles = Article.objects.all().order_by('-publication_date')
 
-def get_category_by_name(request, slug):
-    return HttpResponse(f"Категория {slug}")
+        extra_context = {'query': query}
+        return self.render(request, articles, extra_context)
 
-def get_all_news(request):
-    sort = request.GET.get('sort', 'publication_date')  # сортировка по умолчанию
-    order = request.GET.get('order', 'desc')  # направление сортировки по умолчанию
-    category_id = request.GET.get('category')  # получаем ID категории
+class DetailArticleByIdView(View):
+    def get(self, request, article_id):
+        article = get_object_or_404(Article, id=article_id)
+        categories_with_count = get_categories_with_news_count()
+        context = {**info, 'article': article, 'categories_with_count': categories_with_count}
+        return render(request, 'news/article_detail.html', context)
 
-    # Проверяем, что сортировка допустима
-    valid_sort_fields = {'publication_date', 'views'}
-    if sort not in valid_sort_fields:
-        sort = 'publication_date'
-
-    # Определяем направление сортировки
-    if order == 'asc':
-        order_by = sort
-    else:
-        order_by = f'-{sort}'
-
-    # Фильтруем новости по категории, если передан category_id
-    if category_id:
-        articles = Article.objects.filter(category_id=category_id).order_by(order_by)
-    else:
-        articles = Article.objects.select_related('category').prefetch_related('tags').order_by(order_by)
-
-    # Пагинация
-    paginator = Paginator(articles, 9)  # 9 новостей на страницу
-    page_number = request.GET.get('page')  # получаем номер страницы из GET-запроса
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)  # если page_number не число, показываем первую страницу
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)  # если страница пуста, показываем последнюю
-
-    categories_with_count = get_categories_with_news_count()
-
-    context = {
-        **info,
-        'news': page_obj,  # передаем объект страницы
-        'news_count': len(articles),  # общее количество новостей
-        'categories_with_count': categories_with_count,
-    }
-
-    return render(request, 'news/catalog.html', context=context)
-
-def get_detail_article_by_id(request, article_id):
-    """
-    Возвращает детальную информацию по новости для представления
-    """
-    article = get_object_or_404(Article, id=article_id)
-    categories_with_count = get_categories_with_news_count()
-
-    context = {**info, 'article': article, 'categories_with_count': categories_with_count}
-
-    return render(request, 'news/article_detail.html', context=context)
-
-def get_detail_article_by_title(request, title):
-    """
-    Возвращает детальную информацию по новости для представления
-    """
-    article = get_object_or_404(Article, slug=title)
-    categories_with_count = get_categories_with_news_count()
-
-    context = {**info, 'article': article, 'categories_with_count': categories_with_count}
-
-    return render(request, 'news/article_detail.html', context=context)
-
-def search_news(request):
-    query = request.GET.get('q')  # Получаем поисковый запрос из GET-запроса
-    if query:
-        # Используем Q для поиска по заголовку и содержанию
-        articles = Article.objects.filter(
-            Q(title__icontains=query) | Q(content__icontains=query)
-        ).order_by('-publication_date')
-    else:
-        articles = Article.objects.all().order_by('-publication_date')
-
-    # Пагинация
-    paginator = Paginator(articles, 10)  # 10 новостей на страницу
-    page_number = request.GET.get('page')  # получаем номер страницы из GET-запроса
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)  # если page_number не число, показываем первую страницу
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)  # если страница пуста, показываем последнюю
-
-    categories_with_count = get_categories_with_news_count()
-
-    context = {
-        **info,
-        'news': page_obj,  # передаем объект страницы
-        'news_count': len(articles),  # общее количество новостей
-        'categories_with_count': categories_with_count,
-        'query': query,  # передаем поисковый запрос в контекст
-    }
-
-    return render(request, 'news/catalog.html', context=context)
+class DetailArticleByTitleView(View):
+    def get(self, request, title):
+        article = get_object_or_404(Article, slug=title)
+        categories_with_count = get_categories_with_news_count()
+        context = {**info, 'article': article, 'categories_with_count': categories_with_count}
+        return render(request, 'news/article_detail.html', context)
