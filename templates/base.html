@@ -53,6 +53,11 @@
                     <ul class="navbar-nav ms-auto">
                         {% include "include/nav_menu.html" %}
                     </ul>
+                    <!-- Форма поиска -->
+                    <form class="d-flex" action="{% url 'news:search_news' %}" method="get">
+                        <input class="form-control me-2" type="search" name="q" placeholder="Поиск новостей" aria-label="Search">
+                        <button class="btn btn-outline-warning" type="submit">Поиск</button>
+                    </form>
                 </div>
             </div>
         </nav>

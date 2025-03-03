@@ -4,6 +4,9 @@ from django.shortcuts import render, get_object_or_404
 
 from .models import Article, Tag, Category
 
+from django.db.models import Q
+
+
 # Пример данных для новостей
 info = {
     "users_count": 'нету',
@@ -187,3 +190,35 @@ def get_detail_article_by_title(request, title):
     context = {**info, 'article': article, 'categories_with_count': categories_with_count}
 
     return render(request, 'news/article_detail.html', context=context)
+
+def search_news(request):
+    query = request.GET.get('q')  # Получаем поисковый запрос из GET-запроса
+    if query:
+        # Используем Q для поиска по заголовку и содержанию
+        articles = Article.objects.filter(
+            Q(title__icontains=query) | Q(content__icontains=query)
+        ).order_by('-publication_date')
+    else:
+        articles = Article.objects.all().order_by('-publication_date')
+
+    # Пагинация
+    paginator = Paginator(articles, 10)  # 10 новостей на страницу
+    page_number = request.GET.get('page')  # получаем номер страницы из GET-запроса
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)  # если page_number не число, показываем первую страницу
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)  # если страница пуста, показываем последнюю
+
+    categories_with_count = get_categories_with_news_count()
+
+    context = {
+        **info,
+        'news': page_obj,  # передаем объект страницы
+        'news_count': len(articles),  # общее количество новостей
+        'categories_with_count': categories_with_count,
+        'query': query,  # передаем поисковый запрос в контекст
+    }
+
+    return render(request, 'news/catalog.html', context=context)
