@@ -1,22 +1,50 @@
 {% extends "base.html" %}
 {% load upper_words %}
+
 {% block content %}
 <div class="card">
     <div class="card-body">
-        <h5 class="card-title">{% upper_words article.title %}</h5>
+        <!-- Заголовок статьи -->
+        <h1 class="card-title">{% upper_words article.title %}</h1>
+
+        <!-- Содержание статьи -->
         <p class="card-text">{{ article.content }}</p>
+
+        <!-- Категория статьи -->
         <p class="card-text">
+            <strong>Категория:</strong>
             <a href="{% url 'news:get_news_by_category' article.category.id %}" class="badge bg-primary">
                 {{ article.category.name }}
             </a>
         </p>
-        {% for tag in article.tags.all %}
-            <a href="{% url 'news:get_news_by_tag' tag.id %}" class="badge bg-info">{{ tag.name }}</a>
-        {% endfor %}
-        <p class="card-text">{{ article.id_author }}</p>
-        <p class="card-text">{{ article.publication_date }}</p>
-        <p class="card-text">{{ article.views }}</p>
-        <p class="card-text">{{ article.favorites_count }}</p>
+
+        <!-- Теги статьи -->
+        <p class="card-text">
+            <strong>Теги:</strong>
+            {% for tag in article.tags.all %}
+                <a href="{% url 'news:get_news_by_tag' tag.id %}" class="badge bg-info me-1">{{ tag.name }}</a>
+            {% endfor %}
+        </p>
+
+        <!-- Автор статьи -->
+        <p class="card-text">
+            <strong>Автор:</strong> {{ article.id_author }} А.Н.Оним
+        </p>
+
+        <!-- Дата публикации -->
+        <p class="card-text">
+            <strong>Дата публикации:</strong> {{ article.publication_date|date:"d.m.Y H:i" }}
+        </p>
+
+        <!-- Количество просмотров -->
+        <p class="card-text">
+            <strong>Просмотров:</strong> {{ article.views }}
+        </p>
+
+        <!-- Количество добавлений в избранное -->
+        <p class="card-text">
+            <strong>В избранном у:</strong> {{ article.favorites_count }} никого
+        </p>
     </div>
 </div>
 {% endblock %}

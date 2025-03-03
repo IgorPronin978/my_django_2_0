@@ -111,7 +111,7 @@ class NewsByTagView(BaseNewsView):  # Наследуемся от BaseNewsView
         return self.render(request, articles, extra_context)
 
 class SearchNewsView(BaseNewsView):  # Наследуемся от BaseNewsView
-    paginate_by = 10
+    paginate_by = 9
 
     def get(self, request):
         query = request.GET.get('q')
@@ -128,6 +128,8 @@ class SearchNewsView(BaseNewsView):  # Наследуемся от BaseNewsView
 class DetailArticleByIdView(View):
     def get(self, request, article_id):
         article = get_object_or_404(Article, id=article_id)
+        article.views += 1
+        article.save()
         categories_with_count = get_categories_with_news_count()
         context = {**info, 'article': article, 'categories_with_count': categories_with_count}
         return render(request, 'news/article_detail.html', context)
