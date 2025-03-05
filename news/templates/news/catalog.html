@@ -3,6 +3,8 @@
 {% comment %} Этот шаблон расширяет базовый шаблон base.html {% endcomment %}
 {% comment %} news/templates/news/catalog.html {% endcomment %}
 
+{% load customtags %}  <!-- Загружаем пользовательские теги -->
+
 {% block title %}
     {% if category %}
         Новости в категории: {{ category.name }} | Info to Go
@@ -27,10 +29,13 @@
     <p class="text-center">Всего новостей: {{ news_count }}</p>
     <p class="text-center">Всего пользователей: {{ users_count }}</p>
 
+    <!-- Отладочная информация для проверки IP-адреса -->
+    <p class="text-center">Ваш IP: {{ user_ip }}</p>
+
     <div class="row">
         {% for article in news %}
             <div class="col-md-4">
-                {% include "include/article_preview.html" with article=article %}
+                {% include "include/article_preview.html" with article=article user_ip=user_ip %}  <!-- Передаем user_ip в article_preview.html -->
             </div>
         {% endfor %}
     </div>

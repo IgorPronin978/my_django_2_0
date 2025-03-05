@@ -88,3 +88,20 @@ class Article(models.Model):
 
     def __str__(self):
         return self.title
+
+    def likes_count(self):
+        return self.likes.count()
+
+class Like(models.Model):
+    article = models.ForeignKey('Article', on_delete=models.CASCADE, related_name='likes')
+    ip_address = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'Likes'
+        verbose_name = 'Лайк'
+        verbose_name_plural = 'Лайки'
+        unique_together = ('article', 'ip_address')  # Один пользователь может лайкнуть статью только один раз
+
+    def __str__(self):
+        return f"Like by {self.ip_address} on {self.article.title}"

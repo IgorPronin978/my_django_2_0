@@ -2,7 +2,8 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views import View
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
-from .models import Article, Tag, Category
+from .models import Article, Tag, Category, Like
+from django.http import JsonResponse
 
 # Пример данных для новостей
 info = {
@@ -67,6 +68,7 @@ class BaseNewsView(View, PaginatedView):  # Наследуемся от View
             'categories_with_count': get_categories_with_news_count(),
             'news_count': kwargs.get('news_count', 0),
             'news': kwargs.get('page_obj'),
+            'user_ip': self.request.META.get('REMOTE_ADDR'),  # Добавляем IP пользователя в контекст
         }
         return context
 
@@ -131,7 +133,12 @@ class DetailArticleByIdView(View):
         article.views += 1
         article.save()
         categories_with_count = get_categories_with_news_count()
-        context = {**info, 'article': article, 'categories_with_count': categories_with_count}
+        context = {
+            **info,
+            'article': article,
+            'categories_with_count': categories_with_count,
+            'user_ip': request.META.get('REMOTE_ADDR'), # Убедитесь, что IP передается -->
+        }
         return render(request, 'news/article_detail.html', context)
 
 class DetailArticleByTitleView(View):
@@ -140,3 +147,14 @@ class DetailArticleByTitleView(View):
         categories_with_count = get_categories_with_news_count()
         context = {**info, 'article': article, 'categories_with_count': categories_with_count}
         return render(request, 'news/article_detail.html', context)
+
+class ToggleLikeView(View):
+    def post(self, request, article_id):
+        article = get_object_or_404(Article, id=article_id)
+        ip_address = request.META.get('REMOTE_ADDR')
+
+        like, created = Like.objects.get_or_create(article=article, ip_address=ip_address)
+        if not created:
+            like.delete()
+
+        return JsonResponse({'likes_count': article.likes_count(), 'liked': created})
