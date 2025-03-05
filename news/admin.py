@@ -4,6 +4,8 @@ from django.contrib.admin import SimpleListFilter
 
 from .models import Article, Category, Tag
 
+from .models import Like
+
 
 admin.site.site_header = "Управа My Blog Admin"
 admin.site.site_title = "Управа"
@@ -92,6 +94,9 @@ class ArticleAdmin(admin.ModelAdmin):
         updated = queryset.update(status=Article.Status.UNCHECKED)
         self.message_user(request, f'{updated} статей было отмечено как не проверенные', 'warning')
 
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+    list_display = ('article', 'ip_address', 'created_at')
 
 admin.site.register(Category)
 admin.site.register(Tag)
