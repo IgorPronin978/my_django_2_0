@@ -152,9 +152,12 @@ class ToggleLikeView(View):
     def post(self, request, article_id):
         article = get_object_or_404(Article, id=article_id)
         ip_address = request.META.get('REMOTE_ADDR')
+        print(f"Toggle like for article {article.id} from IP {ip_address}")  # Отладочный вывод
 
         like, created = Like.objects.get_or_create(article=article, ip_address=ip_address)
         if not created:
             like.delete()
 
-        return JsonResponse({'likes_count': article.likes_count(), 'liked': created})
+        liked = Like.objects.filter(article=article, ip_address=ip_address).exists()
+        print(f"Like status: {liked}")  # Отладочный вывод
+        return JsonResponse({'likes_count': article.likes_count(), 'liked': liked})

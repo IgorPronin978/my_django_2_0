@@ -48,11 +48,11 @@
         </p>
 
         <!-- Кнопка лайка -->
-        <button class="btn btn-like {% if article|has_liked:request.META.REMOTE_ADDR %}liked{% endif %}"
+<button class="btn btn-like {% if article|has_liked:user_ip %}liked{% endif %}"
         data-article-id="{{ article.id }}"
         onclick="toggleLike({{ article.id }})">
     ❤️
-        </button>
+</button>
 
         <!-- Количество добавлений в избранное -->
         <p class="card-text">
@@ -82,15 +82,15 @@ function toggleLike(articleId) {
 
 <style>
 .btn-like {
-    background-color: transparent;
-    border: none;
-    font-size: 1.5rem;
-    color: gray;  <!-- Серый цвет по умолчанию -->
-    cursor: pointer;
+    background-color: transparent !important;
+    border: none !important;
+    font-size: 1.5rem !important;
+    color: gray !important;  /* Серый цвет по умолчанию */
+    cursor: pointer !important;
 }
 
 .btn-like.liked {
-    color: red;  <!-- Красный цвет, если лайк поставлен -->
+    color: red !important;  /* Красный цвет, если лайк поставлен */
 }
 </style>
 {% endblock %}
