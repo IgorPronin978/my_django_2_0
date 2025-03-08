@@ -13,11 +13,11 @@
         {% endfor %}
         <p class="card-text">{{ article.publication_date }}</p>
         <p class="card-text">Просмотры: {{ article.views }}</p>
-        <p class="card-text">Лайки: <span id="likes-count-{{ article.id }}">{{ article.likes_count }}</span></p>
-<button class="btn btn-like {% if article|has_liked:user_ip %}liked{% endif %}"
+        <p class="card-text">Нравится: <span id="likes-count-{{ article.id }}">{{ article.likes_count }}</span></p>
+<button class="btn btn-like {% if article|has_liked:user_ip %} liked {% endif %}"
         data-article-id="{{ article.id }}"
         onclick="toggleLike({{ article.id }})">
-    ❤️
+    &#x2764;
 </button>
         <a href="{% url 'news:detail_article_by_id' article.id %}" class="btn btn-primary">Подробнее</a>
     </div>
@@ -45,13 +45,44 @@ function toggleLike(articleId) {
 <style>
 .btn-like {
     background-color: transparent !important;
-    border: none !important;
+    border: 2px solid gray !important;  /* Рамка вокруг сердечка */
+    border-radius: 50%;  /* Делаем рамку круглой */
     font-size: 1.5rem !important;
     color: gray !important;  /* Серый цвет по умолчанию */
     cursor: pointer !important;
+    width: 40px;  /* Фиксированная ширина */
+    height: 40px;  /* Фиксированная высота */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease; /* Плавные переходы */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);  /* Статическая тень */
 }
-
 .btn-like.liked {
     color: red !important;  /* Красный цвет, если лайк поставлен */
+    border-color: red !important;  /* Рамка становится красной */
+}
+
+.btn-like:hover {
+    transform: scale(1.1);  /* Увеличение при наведении */
+    border-color: red !important;  /* Рамка становится красной при наведении */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);  /* Увеличенная тень при наведении */
+}
+
+.btn-like:active {
+    animation: pulse 0.2s ease;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.9);
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);  /* Внутренняя тень при нажатии */
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 </style>
