@@ -14,12 +14,17 @@
         <p class="card-text">{{ article.publication_date }}</p>
         <p class="card-text">Просмотры: {{ article.views }}</p>
         <p class="card-text">Нравится: <span id="likes-count-{{ article.id }}">{{ article.likes_count }}</span></p>
-<button class="btn btn-like {% if article|has_liked:user_ip %} liked {% endif %}"
-        data-article-id="{{ article.id }}"
-        onclick="toggleLike({{ article.id }})">
-    &#x2764;
-</button>
-        <a href="{% url 'news:detail_article_by_id' article.id %}" class="btn btn-primary">Подробнее</a>
+
+        <!-- Кнопка "Подробнее" -->
+        <a href="{% url 'news:detail_article_by_id' article.id %}" class="btn btn-primary" style="margin-right: 2mm;">Подробнее</a>
+
+        <!-- Кнопка "Нравится" с выравниванием по правому краю -->
+        <button class="btn btn-like {% if article|has_liked:user_ip %} liked {% endif %}"
+                data-article-id="{{ article.id }}"
+                onclick="toggleLike({{ article.id }})"
+                style="margin-left: auto;">
+            &#x2764;
+        </button>
     </div>
 </div>
 
@@ -45,7 +50,7 @@ function toggleLike(articleId) {
 <style>
 .btn-like {
     background-color: transparent !important;
-    border: 2px solid gray !important;  /* Рамка вокруг сердечка */
+    border: 3px solid gray !important;  /* Рамка вокруг сердечка */
     border-radius: 50%;  /* Делаем рамку круглой */
     font-size: 1.5rem !important;
     color: gray !important;  /* Серый цвет по умолчанию */
@@ -58,6 +63,7 @@ function toggleLike(articleId) {
     transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease; /* Плавные переходы */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);  /* Статическая тень */
 }
+
 .btn-like.liked {
     color: red !important;  /* Красный цвет, если лайк поставлен */
     border-color: red !important;  /* Рамка становится красной */
