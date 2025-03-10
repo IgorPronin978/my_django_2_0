@@ -15,23 +15,27 @@
         <p class="card-text">Просмотры: {{ article.views }}</p>
         <p class="card-text">Нравится: <span id="likes-count-{{ article.id }}">{{ article.likes_count }}</span></p>
 
-        <!-- Кнопка "Подробнее" -->
-        <a href="{% url 'news:detail_article_by_id' article.id %}" class="btn btn-primary" style="margin-right: 2mm;">Подробнее</a>
+        <!-- Контейнер для кнопок -->
+        <div class="buttons-container" style="display: flex; justify-content: space-between; align-items: center;">
+            <!-- Кнопка "Подробнее" -->
+            <a href="{% url 'news:detail_article_by_id' article.id %}" class="btn btn-primary" style="margin-right: 10px;">Подробнее</a>
 
-        <!-- Кнопка "Нравится" -->
-        <button class="btn btn-like {% if article|has_liked:user_ip %} liked {% endif %}"
-                data-article-id="{{ article.id }}"
-                onclick="toggleLike({{ article.id }})"
-                style="margin-right: 2mm;">
-            &#x2764;
-        </button>
+            <!-- Кнопка "В избранное" -->
+            <button class="btn btn-favorite {% if article|has_favorited:user_ip %} favorited {% endif %}"
+                    data-article-id="{{ article.id }}"
+                    onclick="toggleFavorite({{ article.id }})"
+                    style="margin-left: 10px;">
+                &#x2605; {% if article|has_favorited:user_ip %} Убрать из избранного {% else %} Добавить в избранное {% endif %}
+            </button>
 
-        <!-- Кнопка "В избранное" -->
-        <button class="btn btn-favorite {% if article|has_favorited:user_ip %} favorited {% endif %}"
-                data-article-id="{{ article.id }}"
-                onclick="toggleFavorite({{ article.id }})">
-            &#x2605; {% if article|has_favorited:user_ip %} Убрать из избранного {% else %} Добавить в избранное {% endif %}
-        </button>
+            <!-- Кнопка "Нравится" -->
+            <button class="btn btn-like {% if article|has_liked:user_ip %} liked {% endif %}"
+                    data-article-id="{{ article.id }}"
+                    onclick="toggleLike({{ article.id }})"
+                    style="margin-left: 10px;">
+                &#x2764;
+            </button>
+        </div>
     </div>
 </div>
 
@@ -57,6 +61,17 @@ function toggleFavorite(articleId) {
 </script>
 
 <style>
+.buttons-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px; /* Добавляем отступ сверху для разделения кнопок и текста */
+}
+
+.btn-primary {
+    margin-right: 10px; /* Отступ справа для кнопки "Подробнее" */
+}
+
 .btn-favorite {
     background-color: transparent !important;
     border: 3px solid gray !important;
@@ -87,28 +102,7 @@ function toggleFavorite(articleId) {
 .btn-favorite:active {
     animation: pulse 0.2s ease;
 }
-</style>
 
-<script>
-function toggleLike(articleId) {
-    fetch(`/news/toggle_like/${articleId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById(`likes-count-${articleId}`).textContent = data.likes_count;
-        const likeButton = document.querySelector(`button[data-article-id="${articleId}"]`);
-        likeButton.classList.toggle('liked', data.liked);
-    });
-}
-</script>
-
-<style>
 .btn-like {
     background-color: transparent !important;
     border: 3px solid gray !important;
@@ -123,6 +117,7 @@ function toggleLike(articleId) {
     justify-content: center;
     transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin-left: 10px;
 }
 
 .btn-like.liked {

@@ -47,19 +47,22 @@
             <strong>Нравится:</strong> <span id="likes-count-{{ article.id }}">{{ article.likes_count }}</span>
         </p>
 
-        <!-- Кнопка лайка -->
-        <button class="btn btn-like {% if article|has_liked:user_ip %} liked {% endif %}"
-                data-article-id="{{ article.id }}"
-                onclick="toggleLike({{ article.id }})">
-            &#x2764;
-        </button>
+        <!-- Контейнер для кнопок -->
+        <div class="buttons-container" style="display: flex; align-items: center; gap: 10px;">
+            <!-- Кнопка "Нравится" -->
+            <button class="btn btn-like {% if article|has_liked:user_ip %} liked {% endif %}"
+                    data-article-id="{{ article.id }}"
+                    onclick="toggleLike({{ article.id }})">
+                &#x2764;
+            </button>
 
-        <!-- Кнопка "В избранное" -->
-        <button class="btn btn-favorite {% if article|has_favorited:user_ip %} favorited {% endif %}"
-                data-article-id="{{ article.id }}"
-                onclick="toggleFavorite({{ article.id }})">
-            &#x2605; {% if article|has_favorited:user_ip %} Убрать из избранного {% else %} Добавить в избранное {% endif %}
-        </button>
+            <!-- Кнопка "В избранное" -->
+            <button class="btn btn-favorite {% if article|has_favorited:user_ip %} favorited {% endif %}"
+                    data-article-id="{{ article.id }}"
+                    onclick="toggleFavorite({{ article.id }})">
+                &#x2605; {% if article|has_favorited:user_ip %} Убрать из избранного {% else %} Добавить в избранное {% endif %}
+            </button>
+        </div>
 
         <!-- Количество добавлений в избранное -->
         <p class="card-text">
@@ -90,6 +93,13 @@ function toggleFavorite(articleId) {
 </script>
 
 <style>
+.buttons-container {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Расстояние между кнопками */
+    margin-top: 10px; /* Отступ сверху для разделения кнопок и текста */
+}
+
 .btn-favorite {
     background-color: transparent !important;
     border: 3px solid gray !important;
@@ -103,7 +113,6 @@ function toggleFavorite(articleId) {
     justify-content: center;
     transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    margin-left: 10px;
 }
 
 .btn-favorite.favorited {
@@ -120,28 +129,7 @@ function toggleFavorite(articleId) {
 .btn-favorite:active {
     animation: pulse 0.2s ease;
 }
-</style>
 
-<script>
-function toggleLike(articleId) {
-    fetch(`/news/toggle_like/${articleId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById(`likes-count-${articleId}`).textContent = data.likes_count;
-        const likeButton = document.querySelector(`button[data-article-id="${articleId}"]`);
-        likeButton.classList.toggle('liked', data.liked);
-    });
-}
-</script>
-
-<style>
 .btn-like {
     background-color: transparent !important;
     border: 3px solid gray !important;
