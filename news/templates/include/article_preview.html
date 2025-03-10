@@ -18,19 +18,19 @@
         <!-- Кнопка "Подробнее" -->
         <a href="{% url 'news:detail_article_by_id' article.id %}" class="btn btn-primary" style="margin-right: 2mm;">Подробнее</a>
 
-        <!-- Кнопка "Нравится" с выравниванием по правому краю -->
+        <!-- Кнопка "Нравится" -->
         <button class="btn btn-like {% if article|has_liked:user_ip %} liked {% endif %}"
                 data-article-id="{{ article.id }}"
                 onclick="toggleLike({{ article.id }})"
-                style="margin-left: auto;">
+                style="margin-right: 2mm;">
             &#x2764;
         </button>
 
         <!-- Кнопка "В избранное" -->
-        <button class="btn btn-favorite {% if article|has_favorited:ip_address %} favorited {% endif %}"
+        <button class="btn btn-favorite {% if article|has_favorited:user_ip %} favorited {% endif %}"
                 data-article-id="{{ article.id }}"
                 onclick="toggleFavorite({{ article.id }})">
-            &#x2605; В избранное
+            &#x2605; {% if article|has_favorited:user_ip %} Убрать из избранного {% else %} Добавить в избранное {% endif %}
         </button>
     </div>
 </div>
@@ -47,8 +47,11 @@ function toggleFavorite(articleId) {
     })
     .then(response => response.json())
     .then(data => {
-        const favoriteButton = document.querySelector(`button[data-article-id="${articleId}"].btn-favorite`);
-        favoriteButton.classList.toggle('favorited', data.favorited);
+        const favoriteButtons = document.querySelectorAll(`button[data-article-id="${articleId}"].btn-favorite`);
+        favoriteButtons.forEach(button => {
+            button.classList.toggle('favorited', data.favorited);
+            button.innerHTML = data.favorited ? '&#x2605; Убрать из избранного' : '&#x2605; Добавить в избранное';
+        });
     });
 }
 </script>
@@ -57,17 +60,17 @@ function toggleFavorite(articleId) {
 .btn-favorite {
     background-color: transparent !important;
     border: 3px solid gray !important;
-    border-radius: 30px;  /* Слегка закруглённые углы для кнопки с текстом */
-    font-size: 1rem !important;  /* Уменьшим размер шрифта для текста */
+    border-radius: 30px;
+    font-size: 1rem !important;
     color: gray !important;
     cursor: pointer !important;
-    padding: 5px 15px;  /* Добавим отступы для текста */
-    display: inline-flex;  /* Используем inline-flex для выравнивания иконки и текста */
+    padding: 5px 15px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    margin-left: 10px;  /* Добавим отступ слева для разделения кнопок */
+    margin-left: 10px;
 }
 
 .btn-favorite.favorited {
@@ -76,7 +79,7 @@ function toggleFavorite(articleId) {
 }
 
 .btn-favorite:hover {
-    transform: scale(1.05);  /* Уменьшим масштаб при наведении для кнопки с текстом */
+    transform: scale(1.05);
     border-color: gold !important;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
@@ -84,12 +87,7 @@ function toggleFavorite(articleId) {
 .btn-favorite:active {
     animation: pulse 0.2s ease;
 }
-
-.btn-favorite i {
-    margin-right: 5px;  /* Отступ между иконкой и текстом */
-}
 </style>
-
 
 <script>
 function toggleLike(articleId) {
@@ -113,29 +111,29 @@ function toggleLike(articleId) {
 <style>
 .btn-like {
     background-color: transparent !important;
-    border: 3px solid gray !important;  /* Рамка вокруг сердечка */
-    border-radius: 50%;  /* Делаем рамку круглой */
+    border: 3px solid gray !important;
+    border-radius: 50%;
     font-size: 1.5rem !important;
-    color: gray !important;  /* Серый цвет по умолчанию */
+    color: gray !important;
     cursor: pointer !important;
-    width: 40px;  /* Фиксированная ширина */
-    height: 40px;  /* Фиксированная высота */
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease; /* Плавные переходы */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);  /* Статическая тень */
+    transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .btn-like.liked {
-    color: red !important;  /* Красный цвет, если лайк поставлен */
-    border-color: red !important;  /* Рамка становится красной */
+    color: red !important;
+    border-color: red !important;
 }
 
 .btn-like:hover {
-    transform: scale(1.1);  /* Увеличение при наведении */
-    border-color: red !important;  /* Рамка становится красной при наведении */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);  /* Увеличенная тень при наведении */
+    transform: scale(1.1);
+    border-color: red !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .btn-like:active {
@@ -148,7 +146,7 @@ function toggleLike(articleId) {
     }
     50% {
         transform: scale(0.9);
-        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);  /* Внутренняя тень при нажатии */
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
     }
     100% {
         transform: scale(1);
