@@ -92,6 +92,9 @@ class Article(models.Model):
     def likes_count(self):
         return self.likes.count()
 
+    def favorites_count(self):
+        return self.favorites.count() # Используем related_name='favorites' для связи с моделью Favorite
+
 class Like(models.Model):
     article = models.ForeignKey('Article', on_delete=models.CASCADE, related_name='likes')
     ip_address = models.CharField(max_length=100)
