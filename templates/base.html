@@ -80,6 +80,12 @@
                         </a>
                     </li>
                 {% endfor %}
+                <!-- Новый пункт "Добавить новость" -->
+                <li>
+                    <a href="{% url 'news:add_article' %}">
+                        Добавить новость
+                    </a>
+                </li>
             </ul>
         </div>
         <div class="col-md-10">

@@ -1,9 +1,10 @@
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views import View
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from .models import Article, Tag, Category, Like, Favorite
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from .forms import ArticleForm
 
 # Пример данных для новостей
 info = {
@@ -44,6 +45,26 @@ def about(request):
     categories_with_count = get_categories_with_news_count()
     context = {**info, 'categories_with_count': categories_with_count}
     return render(request, 'about.html', context)
+
+def add_article(request):
+    if request.method == "POST":
+        form = ArticleForm(request.POST)
+        if form.is_valid():
+            # собираем данные формы
+            title = form.cleaned_data['title']
+            content = form.cleaned_data['content']
+            category = form.cleaned_data['category']
+            # сохраняем статью в базу данных
+            article = Article(title=title, content=content, category=category)
+            article.save()
+            # получаем id созданной статьи
+            article_id = article.pk
+            return HttpResponseRedirect(f'/news/catalog/{article_id}')
+    else:
+        form = ArticleForm()  # Создаём пустую форму для GET-запросов
+
+    context = {'form': form, 'menu': info['menu']}
+    return render(request, 'news/add_article.html', context=context)
 
 class PaginatedView:
     paginate_by = 9

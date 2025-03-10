@@ -1,3 +1,4 @@
+from news import views
 from django.urls import path
 from .views import (
     AllNewsView,
@@ -8,7 +9,7 @@ from .views import (
     DetailArticleByTitleView,
     ToggleLikeView,
     ToggleFavoriteView,
-    FavoritesView
+    FavoritesView,
 )
 
 app_name = 'news'
@@ -22,4 +23,5 @@ urlpatterns = [
     path('toggle_like/<int:article_id>/', ToggleLikeView.as_view(), name='toggle_like'),
     path('toggle_favorite/<int:article_id>/', ToggleFavoriteView.as_view(), name='toggle_favorite'),
     path('favorites/', FavoritesView.as_view(), name='favorites'),
+    path('add/', views.add_article, name='add_article'),
 ]

@@ -58,6 +58,30 @@ function toggleFavorite(articleId) {
         });
     });
 }
+function toggleLike(articleId) {
+    fetch(`/news/toggle_like/${articleId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Обновляем количество лайков
+        const likesCountElement = document.getElementById(`likes-count-${articleId}`);
+        if (likesCountElement) {
+            likesCountElement.textContent = data.likes_count;
+        }
+
+        // Обновляем состояние кнопки "Нравится"
+        const likeButtons = document.querySelectorAll(`button[data-article-id="${articleId}"].btn-like`);
+        likeButtons.forEach(button => {
+            button.classList.toggle('liked', data.liked);
+        });
+    });
+}
 </script>
 
 <style>
