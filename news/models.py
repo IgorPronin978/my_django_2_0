@@ -105,3 +105,17 @@ class Like(models.Model):
 
     def __str__(self):
         return f"Like by {self.ip_address} on {self.article.title}"
+
+class Favorite(models.Model):
+    article = models.ForeignKey('Article', on_delete=models.CASCADE, related_name='favorites')
+    ip_address = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'Favorites'
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранные'
+        unique_together = ('article', 'ip_address')  # Один пользователь может добавить новость в избранное только один раз
+
+    def __str__(self):
+        return f"Favorite by {self.ip_address} on {self.article.title}"

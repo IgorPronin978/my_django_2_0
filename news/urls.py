@@ -7,6 +7,8 @@ from .views import (
     DetailArticleByIdView,
     DetailArticleByTitleView,
     ToggleLikeView,
+    ToggleFavoriteView,
+    FavoritesView
 )
 
 app_name = 'news'
@@ -18,4 +20,6 @@ urlpatterns = [
     path('category/<int:category_id>/', NewsByCategoryView.as_view(), name='get_news_by_category'),
     path('search/', SearchNewsView.as_view(), name='search_news'),
     path('toggle_like/<int:article_id>/', ToggleLikeView.as_view(), name='toggle_like'),
+    path('toggle_favorite/<int:article_id>/', ToggleFavoriteView.as_view(), name='toggle_favorite'),
+    path('favorites/', FavoritesView.as_view(), name='favorites'),
 ]

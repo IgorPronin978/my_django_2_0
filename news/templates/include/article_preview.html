@@ -25,8 +25,71 @@
                 style="margin-left: auto;">
             &#x2764;
         </button>
+
+        <!-- Кнопка "В избранное" -->
+        <button class="btn btn-favorite {% if article|has_favorited:ip_address %} favorited {% endif %}"
+                data-article-id="{{ article.id }}"
+                onclick="toggleFavorite({{ article.id }})">
+            &#x2605; В избранное
+        </button>
     </div>
 </div>
+
+<script>
+function toggleFavorite(articleId) {
+    fetch(`/news/toggle_favorite/${articleId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const favoriteButton = document.querySelector(`button[data-article-id="${articleId}"].btn-favorite`);
+        favoriteButton.classList.toggle('favorited', data.favorited);
+    });
+}
+</script>
+
+<style>
+.btn-favorite {
+    background-color: transparent !important;
+    border: 3px solid gray !important;
+    border-radius: 30px;  /* Слегка закруглённые углы для кнопки с текстом */
+    font-size: 1rem !important;  /* Уменьшим размер шрифта для текста */
+    color: gray !important;
+    cursor: pointer !important;
+    padding: 5px 15px;  /* Добавим отступы для текста */
+    display: inline-flex;  /* Используем inline-flex для выравнивания иконки и текста */
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin-left: 10px;  /* Добавим отступ слева для разделения кнопок */
+}
+
+.btn-favorite.favorited {
+    color: gold !important;
+    border-color: gold !important;
+}
+
+.btn-favorite:hover {
+    transform: scale(1.05);  /* Уменьшим масштаб при наведении для кнопки с текстом */
+    border-color: gold !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.btn-favorite:active {
+    animation: pulse 0.2s ease;
+}
+
+.btn-favorite i {
+    margin-right: 5px;  /* Отступ между иконкой и текстом */
+}
+</style>
+
 
 <script>
 function toggleLike(articleId) {

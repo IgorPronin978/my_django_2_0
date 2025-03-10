@@ -3,8 +3,11 @@
         <li class="nav-item">
             <a class="nav-link" href="{% url item.url_name %}">{{ item.title }}</a>
         </li>
-            {% if not forloop.last %}
-                <li class="nav-item"><hr class="dropdown-divider"/></li>
-            {% endif %}
-        {% endfor %}
-    </ul>
+        {% if not forloop.last %}
+            <li class="nav-item"><hr class="dropdown-divider"/></li>
+        {% endif %}
+    {% endfor %}
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'news:favorites' %}">Избранное</a>
+    </li>
+</ul>

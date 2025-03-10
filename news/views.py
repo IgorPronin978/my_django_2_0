@@ -2,7 +2,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views import View
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
-from .models import Article, Tag, Category, Like
+from .models import Article, Tag, Category, Like, Favorite
 from django.http import JsonResponse
 
 # Пример данных для новостей
@@ -161,3 +161,24 @@ class ToggleLikeView(View):
         liked = Like.objects.filter(article=article, ip_address=ip_address).exists()
         print(f"Like status: {liked}")  # Отладочный вывод
         return JsonResponse({'likes_count': article.likes_count(), 'liked': liked})
+
+class ToggleFavoriteView(View):
+    def post(self, request, article_id):
+        article = get_object_or_404(Article, id=article_id)
+        ip_address = request.META.get('REMOTE_ADDR')
+        print(f"Toggle favorite for article {article.id} from IP {ip_address}")  # Отладочный вывод
+
+        favorite, created = Favorite.objects.get_or_create(article=article, ip_address=ip_address)
+        if not created:
+            favorite.delete()
+
+        favorited = Favorite.objects.filter(article=article, ip_address=ip_address).exists()
+        print(f"Favorite status: {favorited}")  # Отладочный вывод
+        return JsonResponse({'favorited': favorited})
+
+class FavoritesView(BaseNewsView):
+    def get(self, request):
+        ip_address = request.META.get('REMOTE_ADDR')
+        favorites = Favorite.objects.filter(ip_address=ip_address).values_list('article', flat=True)
+        articles = Article.objects.filter(id__in=favorites).order_by('-publication_date')
+        return self.render(request, articles)
