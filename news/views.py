@@ -48,23 +48,40 @@ def about(request):
 
 def add_article(request):
     if request.method == "POST":
-        form = ArticleForm(request.POST)
+        form = ArticleForm(request.POST, request.FILES)
         if form.is_valid():
-            # собираем данные формы
-            title = form.cleaned_data['title']
-            content = form.cleaned_data['content']
-            category = form.cleaned_data['category']
-            # сохраняем статью в базу данных
-            article = Article(title=title, content=content, category=category)
-            article.save()
-            # получаем id созданной статьи
-            article_id = article.pk
-            return HttpResponseRedirect(f'/news/catalog/{article_id}')
+            article = form.save()
+            return redirect('news:detail_article_by_id', article_id=article.id)
     else:
         form = ArticleForm()  # Создаём пустую форму для GET-запросов
 
     context = {'form': form, 'menu': info['menu']}
     return render(request, 'news/add_article.html', context=context)
+
+
+def article_update(request, article_id):
+    article = get_object_or_404(Article, pk=article_id)
+
+    if request.method == "POST":
+        form = ArticleForm(request.POST, request.FILES, instance=article)
+        if form.is_valid():
+            form.save()
+            return redirect('news:detail_article_by_id', article_id=article.id)
+    else:
+        form = ArticleForm(instance=article)
+    context = {'form': form, 'menu': info['menu'], 'article': article}
+    return render(request, 'news/edit_article.html', context=context)
+
+
+def article_delete(request, article_id):
+    article = get_object_or_404(Article, pk=article_id)
+
+    if request.method == "POST":
+        article.delete()
+        return redirect('news:catalog')
+
+    context = {'menu': info['menu'], 'article': article}
+    return render(request, 'news/delete_article.html', context=context)
 
 class PaginatedView:
     paginate_by = 9
