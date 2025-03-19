@@ -13,7 +13,7 @@ from .views import (
     ArticleUpdateView,
     ArticleDeleteView,
     UploadJsonView,
-    edit_article_from_json
+    EditArticleFromJsonView
 )
 
 app_name = 'news'
@@ -31,5 +31,5 @@ urlpatterns = [
     path('edit/<int:pk>/', ArticleUpdateView.as_view(), name='article_update'),
     path('delete/<int:pk>/', ArticleDeleteView.as_view(), name='article_delete'),
     path('upload_json/', UploadJsonView.as_view(), name='upload_json'),
-    path('edit_article_from_json/<int:index>/', edit_article_from_json, name='edit_article_from_json'),
+    path('edit_article_from_json/<int:index>/', EditArticleFromJsonView.as_view(), name='edit_article_from_json'),
 ]
