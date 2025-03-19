@@ -3,7 +3,7 @@ from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse
 from django.urls import reverse
 from .models import Article, Tag, Category, Like, Favorite
 from .forms import ArticleForm, ArticleUploadForm
@@ -13,7 +13,7 @@ from django.utils.text import slugify
 # Пример данных для новостей
 info = {
     "users_count": 'нету',
-    "news_count": 'много',
+    "news_count": Article.objects.count(),
     "menu": [
         {"title": "Главная", "url": "/", "url_name": "index"},
         {"title": "О проекте", "url": "/about/", "url_name": "about"},
