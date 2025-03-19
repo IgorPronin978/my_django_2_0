@@ -1,6 +1,7 @@
 import unidecode
 
 from django.db import models
+from django.db.models import Q
 from django.utils.text import slugify
 
 
@@ -22,11 +23,24 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+    @classmethod
+    def get_categories_with_news_count(cls):
+        categories = cls.objects.all()
+        categories_with_count = []
+        for category in categories:
+            news_count = Article.objects.filter(category=category).count()
+            categories_with_count.append({
+                'category': category,
+                'news_count': news_count,
+            })
+        return categories_with_count
+
     class Meta:
         db_table = 'Categories'  # без указания этого параметра, таблица в БД будет называться вида 'news_categorys'
         verbose_name = 'Категория'  # единственное число для отображения в админке
         verbose_name_plural = 'Категории'  # множественное число для отображения в админке
         ordering = ['name']  # указывает порядок сортировки модели по умолчанию
+
 
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True, verbose_name='Тег')
@@ -103,6 +117,45 @@ class Article(models.Model):
 
     def favorites_count(self):
         return self.favorites.count() # Используем related_name='favorites' для связи с моделью Favorite
+
+    @classmethod
+    def get_all_articles(cls, sort='publication_date', order='desc', category_id=None):
+        valid_sort_fields = {'publication_date', 'views'}
+        if sort not in valid_sort_fields:
+            sort = 'publication_date'
+
+        order_by = sort if order == 'asc' else f'-{sort}'
+
+        queryset = cls.objects.select_related('category').prefetch_related('tags')
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+        return queryset.order_by(order_by)
+
+    @classmethod
+    def get_articles_by_category(cls, category_id):
+        return cls.objects.filter(category_id=category_id).order_by('-publication_date')
+
+    @classmethod
+    def get_articles_by_tag(cls, tag_id):
+        return cls.objects.filter(tags__id=tag_id).order_by('-publication_date')
+
+    @classmethod
+    def search_articles(cls, query):
+        if query:
+            return cls.objects.filter(
+                Q(title__icontains=query) | Q(content__icontains=query))
+        return cls.objects.all().order_by('-publication_date')
+
+    @classmethod
+    def get_favorite_articles(cls, ip_address):
+        favorites = Favorite.objects.filter(ip_address=ip_address).values_list('article', flat=True)
+        return cls.objects.filter(id__in=favorites).order_by('-publication_date')
+
+    def likes_count(self):
+        return self.likes.count()
+
+    def favorites_count(self):
+        return self.favorites.count()
 
 class Like(models.Model):
     article = models.ForeignKey('Article', on_delete=models.CASCADE, related_name='likes')
