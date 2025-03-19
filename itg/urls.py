@@ -3,12 +3,15 @@ from django.contrib import admin
 from django.urls import path, include
 
 from itg import settings
-from news import views
+from news.views import (
+    MainView,
+    AboutView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.main, name='index'),
-    path('about/', views.about, name='about'),
+    path('', MainView.as_view(), name='index'),  # Используем MainView для главной страницы
+    path('about/', AboutView.as_view(), name='about'),  # Используем AboutView для страницы "О проекте"
     path('news/', include('news.urls', namespace='news')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

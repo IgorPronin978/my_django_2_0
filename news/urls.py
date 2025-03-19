@@ -1,4 +1,3 @@
-from news import views
 from django.urls import path
 from .views import (
     AllNewsView,
@@ -10,6 +9,11 @@ from .views import (
     ToggleLikeView,
     ToggleFavoriteView,
     FavoritesView,
+    AddArticleView,
+    ArticleUpdateView,
+    ArticleDeleteView,
+    UploadJsonView,
+    edit_article_from_json
 )
 
 app_name = 'news'
@@ -23,9 +27,9 @@ urlpatterns = [
     path('toggle_like/<int:article_id>/', ToggleLikeView.as_view(), name='toggle_like'),
     path('toggle_favorite/<int:article_id>/', ToggleFavoriteView.as_view(), name='toggle_favorite'),
     path('favorites/', FavoritesView.as_view(), name='favorites'),
-    path('add/', views.add_article, name='add_article'),
-    path('edit/<int:article_id>/', views.article_update, name='article_update'),
-    path('delete/<int:article_id>/', views.article_delete, name='article_delete'),
-    path('upload_json/', views.upload_json_view, name='upload_json'),
-    path('edit_article_from_json/<int:index>/', views.edit_article_from_json, name='edit_article_from_json'),
+    path('add/', AddArticleView.as_view(), name='add_article'),
+    path('edit/<int:pk>/', ArticleUpdateView.as_view(), name='article_update'),
+    path('delete/<int:pk>/', ArticleDeleteView.as_view(), name='article_delete'),
+    path('upload_json/', UploadJsonView.as_view(), name='upload_json'),
+    path('edit_article_from_json/<int:index>/', edit_article_from_json, name='edit_article_from_json'),
 ]
