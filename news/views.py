@@ -39,6 +39,105 @@ class MenuMixin:
         context['user_ip'] = self.request.META.get('REMOTE_ADDR')
         return context
 
+class BaseArticleListView(MenuMixin, ListView):
+    model = Article
+    template_name = 'news/catalog.html'
+    context_object_name = 'news'
+    paginate_by = 9
+
+    def get_queryset(self):
+        queryset = Article.objects.select_related('category').prefetch_related('tags')
+        return queryset.order_by('-publication_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories_with_count'] = get_categories_with_news_count()
+        context['user_ip'] = self.request.META.get('REMOTE_ADDR')
+        return context
+
+class AllNewsView(BaseArticleListView):
+    def get_queryset(self):
+        sort = self.request.GET.get('sort', 'publication_date')
+        order = self.request.GET.get('order', 'desc')
+        category_id = self.request.GET.get('category')
+
+        valid_sort_fields = {'publication_date', 'views'}
+        if sort not in valid_sort_fields:
+            sort = 'publication_date'
+
+        order_by = sort if order == 'asc' else f'-{sort}'
+
+        if category_id:
+            return Article.objects.filter(category_id=category_id).order_by(order_by)
+        return super().get_queryset().order_by(order_by)
+
+class NewsByCategoryView(BaseArticleListView):
+    def get_queryset(self):
+        self.category = get_object_or_404(Category, id=self.kwargs['category_id'])
+        return Article.objects.filter(category=self.category).order_by('-publication_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['category'] = self.category
+        return context
+
+class NewsByTagView(BaseArticleListView):
+    def get_queryset(self):
+        self.tag = get_object_or_404(Tag, id=self.kwargs['tag_id'])
+        return Article.objects.filter(tags=self.tag).order_by('-publication_date')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tag'] = self.tag
+        return context
+
+class SearchNewsView(BaseArticleListView):
+    def get_queryset(self):
+        query = self.request.GET.get('q')
+        if query:
+            return Article.objects.filter(
+                Q(title__icontains=query) | Q(content__icontains=query))
+        return super().get_queryset()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['query'] = self.request.GET.get('q')
+        return context
+
+class FavoritesView(BaseArticleListView):
+    def get_queryset(self):
+        ip_address = self.request.META.get('REMOTE_ADDR')
+        favorites = Favorite.objects.filter(ip_address=ip_address).values_list('article', flat=True)
+        return Article.objects.filter(id__in=favorites).order_by('-publication_date')
+
+class ToggleView(View):
+    model = None  # Модель, с которой работает toggle (Like или Favorite)
+    article_field = 'article'  # Поле, связывающее модель с Article
+
+    def post(self, request, article_id):
+        article = get_object_or_404(Article, id=article_id)
+        ip_address = request.META.get('REMOTE_ADDR')
+        obj, created = self.model.objects.get_or_create(**{self.article_field: article, 'ip_address': ip_address})
+        if not created:
+            obj.delete()
+        is_toggled = self.model.objects.filter(**{self.article_field: article, 'ip_address': ip_address}).exists()
+        return self.get_response(article, is_toggled)
+
+    def get_response(self, article, is_toggled):
+        raise NotImplementedError("Subclasses must implement get_response method")
+
+class ToggleLikeView(ToggleView):
+    model = Like
+
+    def get_response(self, article, is_toggled):
+        return JsonResponse({'likes_count': article.likes_count(), 'liked': is_toggled})
+
+class ToggleFavoriteView(ToggleView):
+    model = Favorite
+
+    def get_response(self, article, is_toggled):
+        return JsonResponse({'favorited': is_toggled})
+
 class MainView(MenuMixin, TemplateView):
     template_name = 'main.html'  # Укажите ваш шаблон для главной страницы
 
@@ -53,82 +152,6 @@ class AboutView(MenuMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories_with_count'] = get_categories_with_news_count()
-        return context
-
-class AllNewsView(MenuMixin, ListView):
-    model = Article
-    template_name = 'news/catalog.html'
-    context_object_name = 'news'
-    paginate_by = 9
-
-    def get_queryset(self):
-        sort = self.request.GET.get('sort', 'publication_date')
-        order = self.request.GET.get('order', 'desc')
-        category_id = self.request.GET.get('category')
-
-        valid_sort_fields = {'publication_date', 'views'}
-        if sort not in valid_sort_fields:
-            sort = 'publication_date'
-
-        order_by = sort if order == 'asc' else f'-{sort}'
-
-        if category_id:
-            return Article.objects.filter(category_id=category_id).order_by(order_by)
-        return Article.objects.select_related('category').prefetch_related('tags').order_by(order_by)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['categories_with_count'] = get_categories_with_news_count()
-        context['user_ip'] = self.request.META.get('REMOTE_ADDR')
-        return context
-
-class NewsByCategoryView(MenuMixin, ListView):
-    model = Article
-    template_name = 'news/catalog.html'
-    context_object_name = 'news'
-    paginate_by = 9
-
-    def get_queryset(self):
-        self.category = get_object_or_404(Category, id=self.kwargs['category_id'])
-        return Article.objects.filter(category=self.category).order_by('-publication_date')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['category'] = self.category
-        return context
-
-class NewsByTagView(MenuMixin, ListView):
-    model = Article
-    template_name = 'news/catalog.html'
-    context_object_name = 'news'
-    paginate_by = 9
-
-    def get_queryset(self):
-        self.tag = get_object_or_404(Tag, id=self.kwargs['tag_id'])
-        return Article.objects.filter(tags=self.tag).order_by('-publication_date')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['tag'] = self.tag
-        return context
-
-class SearchNewsView(MenuMixin, ListView):
-    model = Article
-    template_name = 'news/catalog.html'
-    context_object_name = 'news'
-    paginate_by = 9
-
-    def get_queryset(self):
-        query = self.request.GET.get('q')
-        if query:
-            return Article.objects.filter(
-                Q(title__icontains=query) | Q(content__icontains=query)
-            ).order_by('-publication_date')
-        return Article.objects.all().order_by('-publication_date')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['query'] = self.request.GET.get('q')
         return context
 
 class DetailArticleByIdView(MenuMixin, DetailView):
@@ -154,37 +177,6 @@ class DetailArticleByTitleView(MenuMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['categories_with_count'] = get_categories_with_news_count()
         return context
-
-class ToggleLikeView(View):
-    def post(self, request, article_id):
-        article = get_object_or_404(Article, id=article_id)
-        ip_address = request.META.get('REMOTE_ADDR')
-        like, created = Like.objects.get_or_create(article=article, ip_address=ip_address)
-        if not created:
-            like.delete()
-        liked = Like.objects.filter(article=article, ip_address=ip_address).exists()
-        return JsonResponse({'likes_count': article.likes_count(), 'liked': liked})
-
-class ToggleFavoriteView(View):
-    def post(self, request, article_id):
-        article = get_object_or_404(Article, id=article_id)
-        ip_address = request.META.get('REMOTE_ADDR')
-        favorite, created = Favorite.objects.get_or_create(article=article, ip_address=ip_address)
-        if not created:
-            favorite.delete()
-        favorited = Favorite.objects.filter(article=article, ip_address=ip_address).exists()
-        return JsonResponse({'favorited': favorited})
-
-class FavoritesView(MenuMixin, ListView):
-    model = Article
-    template_name = 'news/catalog.html'
-    context_object_name = 'news'
-    paginate_by = 9
-
-    def get_queryset(self):
-        ip_address = self.request.META.get('REMOTE_ADDR')
-        favorites = Favorite.objects.filter(ip_address=ip_address).values_list('article', flat=True)
-        return Article.objects.filter(id__in=favorites).order_by('-publication_date')
 
 class AddArticleView(MenuMixin, CreateView):
     model = Article
