@@ -36,6 +36,7 @@ class MenuMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(info)
+        context['user_ip'] = self.request.META.get('REMOTE_ADDR')
         return context
 
 class MainView(MenuMixin, TemplateView):
