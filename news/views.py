@@ -1,9 +1,12 @@
 import json
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from django.http import JsonResponse
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from .models import Article, Tag, Category, Like, Favorite
 from .forms import ArticleForm, ArticleUploadForm
 import unidecode
@@ -11,8 +14,8 @@ from django.utils.text import slugify
 
 # Пример данных для новостей
 info = {
-    "users_count": 'нету',
-    "news_count": Article.objects.count(),
+    "users_count": get_user_model().objects.count(),
+    "news_count": len(Article.objects.all()),
     "menu": [
         {"title": "Главная", "url": "/", "url_name": "index"},
         {"title": "О проекте", "url": "/about/", "url_name": "about"},
@@ -152,26 +155,30 @@ class DetailArticleByTitleView(MenuMixin, DetailView):
         context['categories_with_count'] = Category.get_categories_with_news_count()
         return context
 
-class AddArticleView(MenuMixin, CreateView):
+class AddArticleView(LoginRequiredMixin, MenuMixin, CreateView):
     model = Article
     form_class = ArticleForm
     template_name = 'news/add_article.html'
+    login_url = reverse_lazy('users:login')  # URL для перенаправления при неавторизованном пользователе на страницу аутентификации
+    redirect_field_name = 'next'  # Имя параметра URL, используемого для перенаправления после успешного входа в систему
     success_url = '/news/catalog/'
 
-class ArticleUpdateView(MenuMixin, UpdateView):
+class ArticleUpdateView(LoginRequiredMixin, MenuMixin, UpdateView):
     model = Article
     form_class = ArticleForm
     template_name = 'news/edit_article.html'
     context_object_name = 'article'
+    redirect_field_name = 'next'
 
     def get_success_url(self):
         return reverse('news:detail_article_by_id', kwargs={'article_id': self.object.id})
 
-class ArticleDeleteView(MenuMixin, DeleteView):
+class ArticleDeleteView(LoginRequiredMixin, MenuMixin, DeleteView):
     model = Article
     template_name = 'news/delete_article.html'
     context_object_name = 'article'
-    success_url = '/news/catalog/'
+    success_url = reverse_lazy('news:catalog')
+    redirect_field_name = 'next'
 
 class UploadJsonView(MenuMixin, FormView):
     form_class = ArticleUploadForm
