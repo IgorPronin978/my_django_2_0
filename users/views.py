@@ -21,7 +21,7 @@ class LoginUser(MenuMixin, LoginView):
 
 
 class LogoutUser(MenuMixin, LogoutView):
-    next_page = reverse_lazy('users:login')
+    next_page = reverse_lazy('users:logout')
 
 
 class RegisterUser(MenuMixin, CreateView):
