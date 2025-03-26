@@ -155,13 +155,29 @@ class DetailArticleByTitleView(MenuMixin, DetailView):
         context['categories_with_count'] = Category.get_categories_with_news_count()
         return context
 
+
+def generate_unique_slug(title):
+    base_slug = slugify(unidecode.unidecode(title))
+    unique_slug = base_slug
+    num = 1
+    while Article.objects.filter(slug=unique_slug).exists():
+        unique_slug = f"{base_slug}-{num}"
+        num += 1
+    return unique_slug
+
+
 class AddArticleView(LoginRequiredMixin, MenuMixin, CreateView):
     model = Article
     form_class = ArticleForm
     template_name = 'news/add_article.html'
     login_url = reverse_lazy('users:login')  # URL для перенаправления при неавторизованном пользователе на страницу аутентификации
     redirect_field_name = 'next'  # Имя параметра URL, используемого для перенаправления после успешного входа в систему
-    success_url = '/news/catalog/'
+    success_url = reverse_lazy('news:catalog')
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        form.instance.slug = generate_unique_slug(form.cleaned_data['title'])
+        return super().form_valid(form)
 
 class ArticleUpdateView(LoginRequiredMixin, MenuMixin, UpdateView):
     model = Article
@@ -169,6 +185,7 @@ class ArticleUpdateView(LoginRequiredMixin, MenuMixin, UpdateView):
     template_name = 'news/edit_article.html'
     context_object_name = 'article'
     redirect_field_name = 'next'
+    success_url = reverse_lazy('news:catalog')
 
     def get_success_url(self):
         return reverse('news:detail_article_by_id', kwargs={'article_id': self.object.id})

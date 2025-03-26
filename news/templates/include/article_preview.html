@@ -19,7 +19,7 @@
         <div class="buttons-container" style="display: flex; justify-content: space-between; align-items: center;">
             <!-- Кнопка "Подробнее" -->
             <a href="{% url 'news:detail_article_by_id' article.id %}" class="btn btn-primary" style="margin-right: 10px;">Подробнее</a>
-
+            <p class="card-text"><i class="bi bi-person-fill"></i> {{ article.author|default:'Аноним' }}</p>
             <!-- Кнопка "В избранное" -->
             <button class="btn btn-favorite {% if article|has_favorited:user_ip %} favorited {% endif %}"
                     data-article-id="{{ article.id }}"

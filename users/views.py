@@ -1,11 +1,10 @@
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, LogoutView
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, reverse
 from django.urls import reverse_lazy
+from django.views.generic import TemplateView, CreateView
 
-from .forms import CustomAuthenticationForm
+from .forms import CustomAuthenticationForm, RegisterUserForm
 from news.views import MenuMixin
 
 
@@ -21,11 +20,17 @@ class LoginUser(MenuMixin, LoginView):
         return reverse_lazy('news:catalog')
 
 
-def logout_user(request):
-    logout(request)
-    # перенаправляем пользователя на главную страницу, используя reverse для получения URL-адреса
-    return redirect(reverse('users:login'))
+class LogoutUser(MenuMixin, LogoutView):
+    next_page = reverse_lazy('users:login')
 
 
-def sign_up(request):
-    return HttpResponse('Регистрация')
+class RegisterUser(MenuMixin, CreateView):
+    form_class = RegisterUserForm
+    template_name = 'users/register.html'
+    extra_context = {'title': 'Регистрация'}
+    success_url = reverse_lazy('users:register_done')
+
+
+class RegisterDoneView(MenuMixin, TemplateView):
+    template_name = 'users/register_done.html'
+    extra_context = {'title': 'Регистрация завершена'}

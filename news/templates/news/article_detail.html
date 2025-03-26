@@ -23,12 +23,12 @@
         <p class="card-text">{{ article.content }}</p>
 
         <!-- Категория статьи -->
-        <p class="card-text">
-            <strong>Категория:</strong>
-            <a href="{% url 'news:get_news_by_category' article.category.id %}" class="badge bg-primary">
-                {{ article.category.name }}
+        <div class="article-taxonomy mb-3">
+            <a href="{% url 'news:get_news_by_category' article.category.id %}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-bookmark"></i> {{ article.category }}
             </a>
-        </p>
+        </div>
 
         <!-- Теги статьи -->
         <p class="card-text">
@@ -39,9 +39,9 @@
         </p>
 
         <!-- Автор статьи -->
-        <p class="card-text">
-            <strong>Автор:</strong> {{ article.id_author }} А.Н.Оним
-        </p>
+        <span class="ms-3 text-muted">
+             <i class="bi bi-person-fill"></i> {{ article.author|default:'Аноним' }}
+        </span>
 
         <!-- Дата публикации -->
         <p class="card-text">
