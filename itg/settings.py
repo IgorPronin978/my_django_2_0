@@ -84,6 +84,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.github',
 
     'django_extensions',
     'debug_toolbar',
@@ -118,6 +119,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'news.context_processors.global_context',
+                'users.context_processors.socialaccount_providers',  # добавляем наш процессор
             ],
         },
     },
@@ -290,3 +292,15 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # Две недели в секундах
 SESSION_SAVE_EVERY_REQUEST = True
+
+SOCIALACCOUNT_PROVIDERS = {
+    'github': {
+        # Какие права запрашивать у пользователя.
+        # Например, для получения email достаточно 'user:email',
+        # а если нужны дополнительные данные — можно добавить 'user', 'repo' и т.д.
+        'SCOPE': ['user:email'],
+        # Дополнительные параметры авторизации.
+        'AUTH_PARAMS': {'access_type': 'online'},
+        # Если нужны иные настройки, их можно добавить здесь.
+    }
+}
