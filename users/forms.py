@@ -2,6 +2,7 @@ from allauth.account.forms import SignupForm
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from .models import Profile
 
 
 class CustomSignupForm(SignupForm):
@@ -45,3 +46,8 @@ class CustomAuthenticationForm(AuthenticationForm):
         label='Пароль',
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
+
+class AvatarUploadForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['avatar']

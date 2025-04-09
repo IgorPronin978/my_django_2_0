@@ -1,6 +1,12 @@
 from django.views.generic import TemplateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from news.models import Article
+from django.views.generic import UpdateView
+from django.urls import reverse_lazy
+
+from users.forms import AvatarUploadForm
+from users.models import Profile
+
 
 class ProfileView(LoginRequiredMixin, TemplateView):
     template_name = 'users/profile.html'
@@ -30,3 +36,12 @@ class ActivityView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context['active_tab'] = 'activity'
         return context
+
+class AvatarUploadView(LoginRequiredMixin, UpdateView):
+    model = Profile
+    form_class = AvatarUploadForm
+    template_name = 'users/upload_avatar.html'
+    success_url = reverse_lazy('users:profile')
+
+    def get_object(self):
+        return self.request.user.profile

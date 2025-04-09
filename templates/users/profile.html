@@ -5,12 +5,12 @@
     <h2>Информация о пользователе</h2>
     <p><strong>Имя пользователя:</strong> {{ user.username }}</p>
     <p><strong>Электронная почта:</strong> {{ user.email }}</p>
-    {% if user.profile.avatar %}
-        <p><strong>Аватар:</strong></p>
-        <img src="{{ user.profile.avatar.url }}" alt="Аватар" style="max-width: 200px;">
-    {% else %}
-        <p>Аватар не установлен</p>
-    {% endif %}
+{% if user.profile.avatar %}
+    <img src="{{ user.profile.avatar.url }}" alt="Аватар" style="max-width: 200px;">
+{% else %}
+    <p>Аватар не установлен</p>
+{% endif %}
+<a href="{% url 'users:upload_avatar' %}">Загрузить аватар</a>
     <p><a href="{% url 'account_change_password' %}">Сменить пароль</a></p>
 </div>
 {% endblock %}
