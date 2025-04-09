@@ -1,0 +1,16 @@
+{% extends 'users/profile_base.html' %}
+
+{% block profile_content %}
+<div class="tab-pane fade show active">
+    <h2>Информация о пользователе</h2>
+    <p><strong>Имя пользователя:</strong> {{ user.username }}</p>
+    <p><strong>Электронная почта:</strong> {{ user.email }}</p>
+    {% if user.profile.avatar %}
+        <p><strong>Аватар:</strong></p>
+        <img src="{{ user.profile.avatar.url }}" alt="Аватар" style="max-width: 200px;">
+    {% else %}
+        <p>Аватар не установлен</p>
+    {% endif %}
+    <p><a href="{% url 'account_change_password' %}">Сменить пароль</a></p>
+</div>
+{% endblock %}

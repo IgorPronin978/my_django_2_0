@@ -1,6 +1,7 @@
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
 
 from itg import settings
 from news import views
@@ -11,7 +12,7 @@ urlpatterns = [
     path('', views.MainView.as_view(), name='index'),  # Используем MainView для главной страницы
     path('about/', views.AboutView.as_view(), name='about'),  # Используем AboutView для страницы "О проекте"
     path('news/', include('news.urls', namespace='news')),
-    # path('users/', include('users.urls', namespace='users')),
+    path('users/', include('users.urls', namespace='users')),
 
     # Общие URL allauth
     path('accounts/', include('allauth.urls')),

@@ -1,0 +1,16 @@
+{% extends 'users/profile_base.html' %}
+
+{% block profile_content %}
+<div class="tab-pane fade show active">
+    <h2>Мои статьи</h2>
+    {% if articles %}
+        <ul>
+            {% for article in articles %}
+                <li><a href="{% url 'news:detail_article_by_id' article.id %}">{{ article.title }}</a></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>У вас нет опубликованных статей.</p>
+    {% endif %}
+</div>
+{% endblock %}
