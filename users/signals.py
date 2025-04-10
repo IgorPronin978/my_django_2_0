@@ -1,11 +1,11 @@
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from allauth.account.models import EmailAddress
-from .models import Profile
-from django.contrib.auth import get_user_model
 
+from .models import Profile
 from news.models import Category
 
 
@@ -21,9 +21,13 @@ def update_verified_status(sender, instance, **kwargs):
 def clear_category_cache(sender, **kwargs):
     cache.delete("categories")
 
+
 User = get_user_model()
 
+
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
+def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
+    else:
+        instance.profile.save()
