@@ -119,16 +119,17 @@ class ArticleDetailView(MenuMixin, DetailView):
     model = Article
     template_name = 'news/article_detail.html'
     context_object_name = 'article'
+    pk_url_kwarg = 'article_id'  # Явно указываем имя параметра URL
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['comment_form'] = CommentForm()
-        # Получаем все комментарии для данной статьи
         context['comments'] = self.object.comments.all()
+        context['categories_with_count'] = Category.get_categories_with_news_count()
+        context['user_ip'] = self.request.META.get('REMOTE_ADDR')
         return context
 
     def post(self, request, *args, **kwargs):
-        # Если пользователь не аутентифицирован – перенаправляем на страницу входа
         if not request.user.is_authenticated:
             return redirect('account_login')
         self.object = self.get_object()
@@ -138,9 +139,7 @@ class ArticleDetailView(MenuMixin, DetailView):
             comment.article = self.object
             comment.user = request.user
             comment.save()
-            # После сохранения перенаправляем на ту же страницу
-            return redirect(self.object.get_absolute_url())
-        # Если форма не валидна – выводим страницу с ошибками
+            return redirect('news:detail_article_by_id', article_id=self.object.id)
         context = self.get_context_data(comment_form=comment_form)
         return self.render_to_response(context)
 
@@ -158,18 +157,6 @@ class AboutView(MenuMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categories_with_count'] = Category.get_categories_with_news_count()
-        return context
-
-class DetailArticleByIdView(MenuMixin, DetailView):
-    model = Article
-    template_name = 'news/article_detail.html'
-    context_object_name = 'article'
-    pk_url_kwarg = 'article_id'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['categories_with_count'] = Category.get_categories_with_news_count()
-        context['user_ip'] = self.request.META.get('REMOTE_ADDR')
         return context
 
 class DetailArticleByTitleView(MenuMixin, DetailView):
