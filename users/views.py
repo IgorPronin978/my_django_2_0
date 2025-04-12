@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.views.generic import TemplateView, ListView
-from news.models import Article
+from news.models import Article, ArticleHistory
 
 from .forms import UserUpdateForm, ProfileUpdateForm
 
@@ -50,6 +50,13 @@ class ProfileActivityView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Здесь вы можете получить историю действий пользователя, например,
-        # из логов или специальной модели истории
+
+        context['histories'] = (
+            ArticleHistory.objects
+            .filter(user=self.request.user)
+            .select_related('article')  # подтягиваем статью
+            .prefetch_related('details')  # подтягиваем список изменений
+            .order_by('-timestamp')  # последние сверху
+        )
         context['active_tab'] = 'activity'
+        return context

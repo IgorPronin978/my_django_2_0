@@ -7,7 +7,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from django.http import JsonResponse
 from django.urls import reverse, reverse_lazy
-from .models import Article, Tag, Category, Like, Favorite
+from .models import Article, ArticleHistory, ArticleHistoryDetail, Category, Favorite, Like, Tag
 from .forms import ArticleForm, ArticleUploadForm
 import unidecode
 from django.utils.text import slugify
@@ -195,19 +195,59 @@ class ArticleUpdateView(LoginRequiredMixin, MenuMixin, UpdateView):
     form_class = ArticleForm
     template_name = 'news/edit_article.html'
     context_object_name = 'article'
-    redirect_field_name = 'next'
-    success_url = reverse_lazy('news:catalog')
+    success_url = '/news/catalog/'
 
-    def get_queryset(self):
-         qs = super().get_queryset()
-         # Если пользователь - администратор или модератор, разрешаем редактировать любые статьи
-         if self.request.user.is_superuser or self.request.user.groups.filter(name="Moderator").exists():
-             return qs
-         # Иначе разрешаем редактировать только статьи, автором которых является пользователь
-         return qs.filter(author=self.request.user)
+    def form_valid(self, form):
+        # Получаем исходное состояние статьи до сохранения изменений
+        original = self.get_object()
+        old_data = {
+            'title': original.title,
+            'category': str(original.category),
+            'tags': list(original.tags.values_list('name', flat=True)),
+        }
 
-    def get_success_url(self):
-        return reverse('news:detail_article_by_id', kwargs={'article_id': self.object.id})
+        # Сохраняем изменения
+        response = super().form_valid(form)
+
+        # Получаем новые данные после сохранения
+        new_data = {
+            'title': self.object.title,
+            'category': str(self.object.category),
+            'tags': list(self.object.tags.values_list('name', flat=True)),
+        }
+
+        # Сравниваем старые и новые данные для отслеживаемых полей
+        changes = {}
+        for key in old_data:
+            if old_data[key] != new_data[key]:
+                changes[key] = (old_data[key], new_data[key])
+
+        # Вывод для отладки (можно удалить после проверки)
+        print("Old data:", old_data)
+        print("New data:", new_data)
+        print("Detected changes:", changes)
+
+        # Если изменения обнаружены, создаём запись истории и детали изменений
+        if changes:
+            from .models import ArticleHistory, ArticleHistoryDetail  # если модели импортируются не глобально
+            history = ArticleHistory.objects.create(article=self.object, user=self.request.user)
+            for field, (old_val, new_val) in changes.items():
+                # Если значение - список (например, теги), преобразуем его в строку
+                if isinstance(old_val, list):
+                    old_str = ', '.join(old_val)
+                else:
+                    old_str = old_val
+                if isinstance(new_val, list):
+                    new_str = ', '.join(new_val)
+                else:
+                    new_str = new_val
+                ArticleHistoryDetail.objects.create(
+                    history=history,
+                    field_name=field,
+                    old_value=old_str,
+                    new_value=new_str,
+                )
+        return response
 
 class ArticleDeleteView(LoginRequiredMixin, MenuMixin, DeleteView):
     model = Article
