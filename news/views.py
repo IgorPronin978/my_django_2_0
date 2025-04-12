@@ -8,7 +8,7 @@ from django.views.generic import TemplateView, ListView, DetailView, CreateView,
 from django.http import JsonResponse
 from django.urls import reverse, reverse_lazy
 from .models import Article, ArticleHistory, ArticleHistoryDetail, Category, Favorite, Like, Tag
-from .forms import ArticleForm, ArticleUploadForm
+from .forms import ArticleForm, ArticleUploadForm, CommentForm
 import unidecode
 from django.utils.text import slugify
 
@@ -114,6 +114,35 @@ class ToggleFavoriteView(ToggleView):
 
     def get_response(self, article, is_toggled):
         return JsonResponse({'favorited': is_toggled})
+
+class ArticleDetailView(MenuMixin, DetailView):
+    model = Article
+    template_name = 'news/article_detail.html'
+    context_object_name = 'article'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['comment_form'] = CommentForm()
+        # Получаем все комментарии для данной статьи
+        context['comments'] = self.object.comments.all()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        # Если пользователь не аутентифицирован – перенаправляем на страницу входа
+        if not request.user.is_authenticated:
+            return redirect('account_login')
+        self.object = self.get_object()
+        comment_form = CommentForm(request.POST)
+        if comment_form.is_valid():
+            comment = comment_form.save(commit=False)
+            comment.article = self.object
+            comment.user = request.user
+            comment.save()
+            # После сохранения перенаправляем на ту же страницу
+            return redirect(self.object.get_absolute_url())
+        # Если форма не валидна – выводим страницу с ошибками
+        context = self.get_context_data(comment_form=comment_form)
+        return self.render_to_response(context)
 
 class MainView(MenuMixin, TemplateView):
     template_name = 'main.html'  # Укажите ваш шаблон для главной страницы

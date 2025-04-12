@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Article, Category, Tag
+from .models import Article, Category, Comment,  Tag
 
 
 class ArticleForm(forms.ModelForm):
@@ -25,6 +25,17 @@ class ArticleForm(forms.ModelForm):
             'tags': 'Теги',
             'image': 'Обложка статьи'
         }
+
+
+class CommentForm(forms.ModelForm):
+    content = forms.CharField(
+        label="Ваш комментарий",
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Введите текст комментария'})
+    )
+
+    class Meta:
+        model = Comment
+        fields = ['content']
 
 
 class ArticleUploadForm(forms.Form):
