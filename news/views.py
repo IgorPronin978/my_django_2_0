@@ -59,9 +59,9 @@ class NewsByCategoryView(BaseArticleListView):
         return Article.get_articles_by_category(self.kwargs['category_id'])
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['category'] = get_object_or_404(Category, id=self.kwargs['category_id'])
-        return context
+         context = super().get_context_data(**kwargs)
+         context['active_category_id'] = self.kwargs['category_id']
+         return context
 
 class NewsByTagView(BaseArticleListView):
     def get_queryset(self):
