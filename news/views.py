@@ -5,9 +5,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
-from .models import Article, ArticleHistory, ArticleHistoryDetail, Category, Favorite, Like, Tag
+from .models import Article, ArticleHistory, ArticleHistoryDetail, Category, Favorite, Like, Tag,  UserSubscription, TagSubscription
 from .forms import ArticleForm, ArticleUploadForm, CommentForm
 import unidecode
 from django.utils.text import slugify
@@ -47,12 +47,21 @@ class BaseArticleListView(MenuMixin, ListView):
         context['user_ip'] = self.request.META.get('REMOTE_ADDR')
         return context
 
-class AllNewsView(BaseArticleListView):
+class AllNewsView(MenuMixin, ListView):
+    template_name = 'news/catalog.html'
+    context_object_name = 'news'
+    paginate_by = 10
+
     def get_queryset(self):
-        sort = self.request.GET.get('sort', 'publication_date')
-        order = self.request.GET.get('order', 'desc')
-        category_id = self.request.GET.get('category')
-        return Article.get_all_articles(sort=sort, order=order, category_id=category_id)
+        return Article.get_all_articles(
+            sort=self.request.GET.get('sort', 'publication_date'),
+            order=self.request.GET.get('order', 'desc')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user_ip'] = self.request.META.get('REMOTE_ADDR')
+        return context
 
 class NewsByCategoryView(BaseArticleListView):
     def get_queryset(self):
@@ -68,9 +77,17 @@ class NewsByTagView(BaseArticleListView):
         return Article.get_articles_by_tag(self.kwargs['tag_id'])
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['tag'] = get_object_or_404(Tag, id=self.kwargs['tag_id'])
-        return context
+         context = super().get_context_data(**kwargs)
+         tag = get_object_or_404(Tag, pk=self.kwargs["tag_id"])
+         context["active_tag"] = tag
+         if self.request.user.is_authenticated:
+             context["is_subscribed_tag"] = TagSubscription.objects.filter(
+                 subscriber=self.request.user,
+                 tag=tag
+             ).exists()
+         else:
+             context["is_subscribed_tag"] = False
+         return context
 
 class SearchNewsView(BaseArticleListView):
     def get_queryset(self):
@@ -124,6 +141,16 @@ class ArticleDetailView(MenuMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['comment_form'] = CommentForm()
+
+        # подписка на автора
+        if self.request.user.is_authenticated and self.object.author:
+            context["is_subscribed_author"] = UserSubscription.objects.filter(
+                subscriber=self.request.user,
+                author=self.object.author
+            ).exists()
+        else:
+            context["is_subscribed_author"] = False
+
         context['comments'] = self.object.comments.all()
         context['categories_with_count'] = Category.get_categories_with_news_count()
         context['user_ip'] = self.request.META.get('REMOTE_ADDR')
@@ -143,12 +170,41 @@ class ArticleDetailView(MenuMixin, DetailView):
         context = self.get_context_data(comment_form=comment_form)
         return self.render_to_response(context)
 
-class MainView(MenuMixin, TemplateView):
-    template_name = 'main.html'  # Укажите ваш шаблон для главной страницы
+class MainView(MenuMixin, ListView):
+    """
+     Главная страница `/` – выводит статьи авторов/тегов,
+     на которые подписан текущий пользователь.
+     Если подписок нет — возвращает пустой QuerySet.
+     """
+
+    template_name = "news/catalog.html"
+    paginate_by = 10
+    context_object_name = "articles"
+
+    def get_queryset(self):
+        order_by = self.request.GET.get("order_by", "-publication_date")
+        qs = Article.objects.select_related("category").prefetch_related("tags")
+
+        user = self.request.user
+        if not user.is_authenticated:
+            return qs.none()
+
+        author_ids = user.subscribed_authors.values_list("author_id", flat=True)
+        tag_ids = user.subscribed_tags.values_list("tag_id", flat=True)
+
+        if author_ids or tag_ids:
+            qs = qs.filter(
+                Q(author_id__in=author_ids) | Q(tags__id__in=tag_ids)
+            ).distinct()
+        else:
+            qs = qs.none()
+
+        return qs.order_by(order_by)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categories_with_count'] = Category.get_categories_with_news_count()
+        context["is_feed"] = True          # признак «это лента подписок»
+        context["active_tag"] = None       # чтобы шаблон не путал с тег‑страницей
         return context
 
 class AboutView(MenuMixin, TemplateView):
@@ -375,3 +431,39 @@ class EditArticleFromJsonView(MenuMixin, FormView):
                 tag = Tag.objects.get(name=tag_name)
                 article.tags.add(tag)
         return article
+
+    # ------------------  TOGGLE AUTHOR SUBSCRIPTION  -------------------
+
+
+class ToggleAuthorSubscriptionView(LoginRequiredMixin, View):
+    """
+    POST‑эндпоинт/subscribe/author/<author_id>/.
+    Переключает подписку текущего пользователя на автора.
+    """
+
+    def post(self, request, author_id, *args, **kwargs):
+        sub, created = UserSubscription.objects.get_or_create(
+            subscriber=request.user,
+            author_id=author_id,
+        )
+        if not created:
+            sub.delete()
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
+    # ------------------  TOGGLE TAG SUBSCRIPTION  ----------------------
+
+
+class ToggleTagSubscriptionView(LoginRequiredMixin, View):
+    """
+    POST‑эндпоинт/subscribe/tag/<tag_id>/.
+    Переключает подписку на тег.
+    """
+
+    def post(self, request, tag_id, *args, **kwargs):
+        sub, created = TagSubscription.objects.get_or_create(
+            subscriber=request.user,
+            tag_id=tag_id,
+        )
+        if not created:
+            sub.delete()
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))

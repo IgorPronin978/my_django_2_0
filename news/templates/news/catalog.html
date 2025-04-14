@@ -1,83 +1,48 @@
 {% extends 'base.html' %}
-
-{% comment %} Этот шаблон расширяет базовый шаблон base.html {% endcomment %}
-{% comment %} news/templates/news/catalog.html {% endcomment %}
-
-{% load customtags %}  <!-- Загружаем пользовательские теги -->
-
-{% block title %}
-    {% if category %}
-        Новости в категории: {{ category.name }} | Info to Go
-    {% elif tag %}
-        Новости по тегу: {{ tag.name }} | Info to Go
-    {% else %}
-        Каталог новостей Info to Go
-    {% endif %}
-{% endblock %}
+{% block title %}Каталог новостей Info to Go{% endblock %}
 
 {% block content %}
-    <h1 class="text-center mb-4">
-        {% if category %}
-            Новости в категории: {{ category.name }}
-        {% elif tag %}
-            Новости по тегу: {{ tag.name }}
-        {% else %}
-            Каталог новостей Info to Go
-        {% endif %}
-    </h1>
+{% include "include/search_form.html" %}
 
-    <p class="text-center">Всего новостей: {{ news_count }}</p>
-    <p class="text-center">Всего пользователей: {{ users_count }}</p>
+    {% if is_feed %}
+      <h2 class="mb-4">Лента ваших подписок</h2>
+      {% if not articles %}
+          <div class="alert alert-info">
+              Пока здесь пусто. Подпишитесь на авторов или теги, чтобы видеть их статьи.
+          </div>
+      {% endif %}
+    {% endif %}
 
-    <!-- Отладочная информация для проверки IP-адреса -->
-    <p class="text-center">Ваш IP: {{ user_ip }}</p>
+    {# --- кнопка подписки, когда мы на странице конкретного тега --- #}
+    {% if active_tag %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="m-0">
+              Статьи по тегу «{{ active_tag.name }}»
+          </h2>
+          <form method="POST"
+                action="{% url 'news:toggle_tag_subscription' active_tag.id %}">
+              {% csrf_token %}
+              {% if is_subscribed_tag %}
+                  <button class="btn btn-outline-secondary">
+                      <i class="bi bi-bell-slash"></i> Отписаться
+                  </button>
+              {% else %}
+                  <button class="btn btn-outline-primary">
+                      <i class="bi bi-bell"></i> Подписаться на тег
+                  </button>
+              {% endif %}
+          </form>
+    </div>
+    {% endif %}
+    <h1 class="text-center mb-4"></h1>
 
     <div class="row">
-        {% for article in news %}
-            <div class="col-md-4">
-                {% include "include/article_preview.html" with article=article user_ip=user_ip %}  <!-- Передаем user_ip в article_preview.html -->
-            </div>
+        {% include "include/paginator.html" with page=page_obj %}
+
+        {% for article in page_obj %}
+            {% include "include/article_preview.html" with article=article %}
         {% endfor %}
+
+        {% include "include/paginator.html" with page=page_obj %}
     </div>
-
-    <!-- Пагинация -->
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?{% if category %}category={{ category.id }}&{% elif tag %}tag={{ tag.id }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-            {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link" aria-hidden="true">&laquo;</span>
-                </li>
-            {% endif %}
-
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
-                {% else %}
-                    <li class="page-item">
-                        <a class="page-link" href="?{% if category %}category={{ category.id }}&{% elif tag %}tag={{ tag.id }}&{% endif %}page={{ num }}">{{ num }}</a>
-                    </li>
-                {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?{% if category %}category={{ category.id }}&{% elif tag %}tag={{ tag.id }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            {% else %}
-                <li class="page-item disabled">
-                    <span class="page-link" aria-hidden="true">&raquo;</span>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
 {% endblock %}

@@ -1,5 +1,6 @@
 import unidecode
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Q
@@ -223,3 +224,50 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ('created_at',)
+
+
+class UserSubscription(models.Model):
+    """
+    Подписка одного пользователя (subscriber)
+    на статьи другого пользователя‑автора (author).
+    """
+    subscriber = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subscribed_authors",
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="followers",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("subscriber", "author")
+        verbose_name = "Подписка на автора"
+        verbose_name_plural = "Подписки на авторов"
+
+    def __str__(self):
+        return f"{self.subscriber} → {self.author}"
+
+
+class TagSubscription(models.Model):
+    """
+    Подписка пользователя на теги.
+    """
+    subscriber = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subscribed_tags",
+    )
+    tag = models.ForeignKey("Tag", on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("subscriber", "tag")
+        verbose_name = "Подписка на тег"
+        verbose_name_plural = "Подписки на теги"
+
+    def __str__(self):
+        return f"{self.subscriber} → #{self.tag}"

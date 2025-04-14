@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.contrib.admin import SimpleListFilter
 
-from .models import Article, Category, Tag
+from .models import Article, Category, Tag, UserSubscription, TagSubscription
 
 from .models import Like
 
@@ -100,3 +100,5 @@ class LikeAdmin(admin.ModelAdmin):
 
 admin.site.register(Category)
 admin.site.register(Tag)
+admin.site.register(UserSubscription)
+admin.site.register(TagSubscription)
