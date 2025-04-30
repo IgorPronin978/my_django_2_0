@@ -11,6 +11,6 @@
  python /app/create_admin.py
 
  # Запускаем Django (используя Gunicorn или runserver)
- # exec gunicorn itg.wsgi:application --bind 0.0.0.0:8000
+ exec gunicorn itg.wsgi:application --bind 0.0.0.0:8000
  # или просто:
- exec python manage.py runserver 0.0.0.0:8000
+ # exec python manage.py runserver 0.0.0.0:8000
