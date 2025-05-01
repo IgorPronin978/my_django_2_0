@@ -1,28 +1,46 @@
 version: "3.8"
 
 services:
- db:
-   image: postgres:13
-   env_file:
-     - .env
-   environment:
-     - POSTGRES_DB=${PG_NAME}
-     - POSTGRES_USER=${PG_USER}
-     - POSTGRES_PASSWORD=${PG_PASSWORD}
-   volumes:
-     - postgres_data:/var/lib/postgresql/data
+  db:
+    image: postgres:13
+    container_name: db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${PG_NAME}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
- web:
-   build: .
-   command: python manage.py runserver 0.0.0.0:8000
-   volumes:
-     - .:/app
-   ports:
-     - "8000:8000"
-   depends_on:
-     - db
-   env_file:
-     - .env
+  web:
+    image: itg_web:latest      # <-- добавили
+    build: .
+    container_name: web
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      - DOCKERIZED=1        # <-- добавляем
+    volumes:
+      - .:/app
+      - media_volume:/media
+
+  nginx:
+    build:
+      context: ./nginx      # берёт nginx/Dockerfile и nginx.conf
+    container_name: nginx
+    depends_on:
+      - web
+    volumes:
+      - media_volume:/media
+    ports:
+      - "80:80"
 
 volumes:
   postgres_data:
+  media_volume:

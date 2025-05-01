@@ -2,16 +2,27 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y netcat-openbsd gcc libpq-dev && apt-get clean
+# Системные пакеты
+ RUN apt-get update && apt-get install -y \
+         netcat-openbsd gcc libpq-dev && apt-get clean
 
-COPY requirements.txt /app/
+# Python-зависимости
+ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Явно указываем файлы
-COPY entrypoint.sh /app/
-COPY wait-for-db.sh /app/
-RUN chmod +x /app/entrypoint.sh /app/wait-for-db.sh
+# Скрипты
+ COPY entrypoint.sh wait-for-db.sh ./
+ RUN chmod +x entrypoint.sh wait-for-db.sh
 
-COPY . /app/
+# --- переменная окружения для этапа build ---
+ ENV DOCKERIZED=1 \
+     PYTHONUNBUFFERED=1 \
+     PYTHONDONTWRITEBYTECODE=1
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Код проекта
+ COPY . .
+
+ # collectstatic -> /static  (путь выбирается по DOCKERIZED=1)
+ RUN mkdir -p /static && python manage.py collectstatic --no-input
+
+ ENTRYPOINT ["./entrypoint.sh"]
